@@ -49,7 +49,14 @@ class NeedEngine:
             needs.append({"capability":"self_testing","title":"Eigenen Zustand reproduzierbar prüfen","reason":"Neue Fähigkeiten benötigen ausführbare Evidenz.","urgency":90,"prerequisites":["skill_creation"]})
         if offers and any(x.get("configured") for x in a.connectors.snapshot()) and not any(x.get("published_url") for x in offers):
             needs.append({"capability":"external_publishing","title":"Angebot über echten Anschluss veröffentlichen","reason":"Ein konfigurierter externer Kanal existiert.","urgency":75,"prerequisites":["offer_creation"]})
-        return sorted(needs,key=lambda x:(-x["urgency"],x["capability"]))
+        # A need is actionable only when its prerequisites are already satisfied.
+        # This keeps the growth path dependency-correct instead of letting a
+        # high-urgency downstream capability leapfrog its prerequisites.
+        eligible=[
+            need for need in needs
+            if all(active(prerequisite) for prerequisite in need.get("prerequisites",[]))
+        ]
+        return sorted(eligible,key=lambda x:(-x["urgency"],x["capability"]))
 
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice","service",0,120,3,.45,.65),
