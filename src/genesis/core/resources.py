@@ -49,5 +49,13 @@ class ResourceLedger:
         amount=float(amount)
         if amount<0 or amount>self.state.reserved_eur:return False
         self.state.reserved_eur-=amount; self.save(); return True
+    def consume(self,resource,amount):
+        amount=float(amount)
+        if amount < 0: raise ValueError("resource consumption cannot be negative")
+        if not hasattr(self.state,resource): raise KeyError(resource)
+        current=float(getattr(self.state,resource))
+        if current < amount: return False
+        setattr(self.state,resource,current-amount); self.save(); return True
+
     def available_cash(self): return max(0.0,self.state.cash_eur-self.state.reserved_eur)
     def snapshot(self): return asdict(self.state)
