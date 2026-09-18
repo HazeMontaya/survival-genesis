@@ -13,6 +13,7 @@ from .world import WorldModel
 from .capabilities import CapabilityRegistry
 from .projects import ProjectBoard
 from .agents import AgentDirectory
+from .social import MessageBus
 
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice","service",0,120,3,.45,.65),
@@ -41,6 +42,7 @@ class GenesisAgent:
         self.projects=ProjectBoard(root/"projects.json")
         self.agents=AgentDirectory(root/"agents.json")
         self.agents.ensure_genesis()
+        self.messages=MessageBus(root/"messages.json")
         self.world=WorldModel(root/"world.json")
 
     def snapshot(self):
@@ -59,6 +61,7 @@ class GenesisAgent:
             "capabilities":self.capabilities.snapshot(),
             "projects":self.projects.snapshot(),
             "agents":self.agents.snapshot(),
+            "messages":self.messages.snapshot(),
             "world":self.world.snapshot(self),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
@@ -115,6 +118,7 @@ class GenesisAgent:
                 evidence={"type":"goal_decomposition","verified":True}
             elif task.capability_id=="agent_creation":
                 child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[])
+                self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.", "onboarding")
                 self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
                 evidence={"type":"agent_created","agent_id":child.id}
             elif task.capability_id=="offer_creation":
@@ -123,6 +127,7 @@ class GenesisAgent:
                 evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
             elif task.capability_id=="specialist_research":
                 child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"])
+                self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.", "onboarding")
                 evidence={"type":"agent_created","agent_id":child.id}
             elif task.capability_id=="external_publishing":
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
