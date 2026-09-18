@@ -157,17 +157,44 @@ class WorldModel:
             add(WorldEntity(oid, "output", o.get("title","Offer"), room="commerce", visual_state="ready",
                             x=88, y=55, size=.9, reason=o.get("description","")))
 
-        for m in memories[-100:]:
-            mid = "memory:" + m["id"]
-            idx = max(0, len(memories) - 100) + memories[-100:].index(m)
-            x, y = self._pos(mid, "knowledge", idx, max(1, min(100, len(memories))))
-            add(WorldEntity(mid, "memory", m["kind"], room="knowledge", visual_state=m.get("status","alive"),
-                            x=x, y=y, size=min(1.1, .45 + min(8, m.get("uses",0))*.08),
-                            reason=m.get("content",""), created_at=m.get("created_at","")))
-            for target in m.get("links", []):
-                if any(item["id"] == target for item in memories):
-                    relations.append(WorldRelation(f"memory-link:{m['id']}:{target}", mid, f"memory:{target}",
-                                                    "knowledge_link", min(4, 1 + m.get("uses",0)/3)))
+        # MemoryGraph implementations may expose dataclasses or plain dicts.
+        # Normalize both forms so the world projection remains read-only and tolerant
+        # of older persisted memory records.
+        memory_items = []
+        for index, raw in enumerate(memories[-100:]):
+            item = asdict(raw) if hasattr(raw, "__dataclass_fields__") else dict(raw)
+            memory_id = str(item.get("id") or hashlib.sha1(
+                f"{item.get('kind','memory')}:{item.get('content','')}:{item.get('created_at','')}:{index}".encode()
+            ).hexdigest()[:12])
+            item["_world_id"] = memory_id
+            memory_items.append(item)
+
+        known_memory_ids = {item["_world_id"] for item in memory_items}
+        for idx, m in enumerate(memory_items):
+            mid = "memory:" + m["_world_id"]
+            x, y = self._pos(mid, "knowledge", idx, max(1, len(memory_items)))
+            add(WorldEntity(
+                mid,
+                "memory",
+                str(m.get("kind", "memory")),
+                room="knowledge",
+                visual_state=str(m.get("status", "alive")),
+                x=x,
+                y=y,
+                size=min(1.1, .45 + min(8, float(m.get("uses", 0) or 0)) * .08),
+                reason=str(m.get("content", "")),
+                created_at=str(m.get("created_at", "")),
+            ))
+            for target in m.get("links", []) or []:
+                target_id = str(target)
+                if target_id in known_memory_ids:
+                    relations.append(WorldRelation(
+                        f"memory-link:{m['_world_id']}:{target_id}",
+                        mid,
+                        f"memory:{target_id}",
+                        "knowledge_link",
+                        min(4, 1 + float(m.get("uses", 0) or 0) / 3),
+                    ))
 
         for e in evidence[-80:]:
             eid = f"evidence:{e['id']}"
