@@ -1,18 +1,22 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "survival-genesis"
-version = "0.1.1"
+version = "0.2.0"
 description = "Zero-capital-first autonomous economic agent runtime"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
 [project.scripts]
-survival-genesis = "genesis.cli:main"
+survival-genesis = "genesis.interfaces.cli:main"
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["genesis*"]
 
 [tool.pytest.ini_options]

@@ -1,24 +1,24 @@
-from .economy import Economy
-from .opportunities import Opportunity, rank
-from .state import StateStore
-from .survival import SurvivalPolicy
-from .tasks import TaskBoard
-from .memory import MemoryGraph
-from .company import CompanyProfile
-from .artifacts import ArtifactStore
-from .signals import SignalEngine
-from .commerce import CommerceEngine
-from .connectors import ConnectorRegistry
-from .world import WorldModel
-from .capabilities import CapabilityRegistry
-from .projects import ProjectBoard
-from .agents import AgentDirectory
-from .social import MessageBus
-from .tools import ToolRegistry
-from .skills import SkillRegistry
-from .soul import SoulStore
-from .treasury import Treasury
-from .resources import ResourceLedger
+from genesis.domain.economy import Economy
+from genesis.core.opportunities import Opportunity, rank
+from genesis.core.state import StateStore
+from genesis.core.survival import SurvivalPolicy
+from genesis.domain.tasks import TaskBoard
+from genesis.domain.memory import MemoryGraph
+from genesis.core.company import CompanyProfile
+from genesis.domain.artifacts import ArtifactStore
+from genesis.integrations.signals import SignalEngine
+from genesis.domain.commerce import CommerceEngine
+from genesis.integrations.connectors import ConnectorRegistry
+from genesis.domain.world import WorldModel
+from genesis.domain.capabilities import CapabilityRegistry
+from genesis.domain.projects import ProjectBoard
+from genesis.domain.agents import AgentDirectory
+from genesis.domain.social import MessageBus
+from genesis.integrations.tools import ToolRegistry
+from genesis.domain.skills import SkillRegistry
+from genesis.domain.soul import SoulStore
+from genesis.integrations.treasury import Treasury
+from genesis.core.resources import ResourceLedger
 
 class NeedEngine:
     """Derives the next missing capability from persistent runtime state."""
@@ -49,13 +49,7 @@ class NeedEngine:
             needs.append({"capability":"self_testing","title":"Eigenen Zustand reproduzierbar prüfen","reason":"Neue Fähigkeiten benötigen ausführbare Evidenz.","urgency":90,"prerequisites":["skill_creation"]})
         if offers and any(x.get("configured") for x in a.connectors.snapshot()) and not any(x.get("published_url") for x in offers):
             needs.append({"capability":"external_publishing","title":"Angebot über echten Anschluss veröffentlichen","reason":"Ein konfigurierter externer Kanal existiert.","urgency":75,"prerequisites":["offer_creation"]})
-        # A need is actionable only when its prerequisites are already satisfied.
-        # This keeps the growth path dependency-correct instead of letting a
-        # high-urgency downstream capability leapfrog its prerequisites.
-        eligible=[
-            need for need in needs
-            if all(active(prerequisite) for prerequisite in need.get("prerequisites",[]))
-        ]
+        eligible=[need for need in needs if all(active(prerequisite) for prerequisite in need.get("prerequisites",[]))]
         return sorted(eligible,key=lambda x:(-x["urgency"],x["capability"]))
 
 DEFAULT_OPPORTUNITIES = [
@@ -99,25 +93,12 @@ class GenesisAgent:
         l=self.store.load()
         self.world.sync(self)
         return {
-            "mode":self.policy.mode(l),
-            "company":self.company.snapshot(),
-            "ledger":l.__dict__,
-            "tasks":self.tasks.snapshot(),
-            "memory":self.memory.snapshot(),
-            "artifacts":self.artifacts.snapshot(),
-            "signals":self.signals.snapshot(),
-            "commerce":self.commerce.snapshot(),
-            "connectors":self.connectors.snapshot(),
-            "capabilities":self.capabilities.snapshot(),
-            "projects":self.projects.snapshot(),
-            "agents":self.agents.snapshot(),
-            "messages":self.messages.snapshot(),
-            "tools":self.tools.snapshot(),
-            "skills":self.skills.snapshot(),
-            "soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),
-            "treasury":self.treasury.snapshot(),
-            "resources":self.resources.snapshot(),
+            "mode":self.policy.mode(l),"company":self.company.snapshot(),"ledger":l.__dict__,"tasks":self.tasks.snapshot(),
+            "memory":self.memory.snapshot(),"artifacts":self.artifacts.snapshot(),"signals":self.signals.snapshot(),
+            "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
+            "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
+            "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
+            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
@@ -132,60 +113,37 @@ class GenesisAgent:
         return self.projects.create(title,goal,owner,[cid])
 
     def decide(self):
-        """Select the highest-priority unsatisfied need from live state."""
         need=next(iter(self.needs.detect()),None)
-        if not need:
-            return None,None,None
+        if not need:return None,None,None
         cid=need["capability"]
         genesis=self.agents.get("genesis-1")
-        descriptions={
-            "observe_environment":"Zustand, Ressourcen und externe Signale erfassen.",
-            "goal_decomposition":"Aus der Mission konkrete Ziele und Abhängigkeiten ableiten.",
-            "agent_creation":"Neue spezialisierte Agenten aus einem überprüfbaren Blueprint erzeugen.",
-            "offer_creation":"Ein überprüfbares und lieferbares Ergebnis erzeugen.",
-            "specialist_research":"Markt- und Evidenzsignale systematisch untersuchen.",
-            "skill_creation":"Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.",
-            "self_testing":"Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.",
-            "external_publishing":"Ein Angebot über einen konfigurierten externen Kanal veröffentlichen.",
-        }
+        descriptions={"observe_environment":"Zustand, Ressourcen und externe Signale erfassen.","goal_decomposition":"Aus der Mission konkrete Ziele und Abhängigkeiten ableiten.","agent_creation":"Neue spezialisierte Agenten aus einem überprüfbaren Blueprint erzeugen.","offer_creation":"Ein überprüfbares und lieferbares Ergebnis erzeugen.","specialist_research":"Markt- und Evidenzsignale systematisch untersuchen.","skill_creation":"Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.","self_testing":"Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.","external_publishing":"Ein Angebot über einen konfigurierten externen Kanal veröffentlichen."}
         self._capability(cid,need["title"],descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
         return cid,need["title"],self._project_for(cid,need["title"],need["reason"])
 
     def _execute(self,task):
-        if task.capability_id:
-            self.capabilities.transition(task.capability_id,"in_entwicklung")
+        if task.capability_id:self.capabilities.transition(task.capability_id,"in_entwicklung")
         try:
             if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0])
-                self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8)
-                evidence={"type":"observation","signal":signal}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); evidence={"type":"observation","signal":signal}
             elif task.capability_id=="goal_decomposition":
-                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9)
-                evidence={"type":"goal_decomposition","verified":True}
+                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); evidence={"type":"goal_decomposition","verified":True}
             elif task.capability_id=="agent_creation":
                 child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
-                self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.", "onboarding")
+                self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.","onboarding")
                 self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
                 self._capability("research_observation","Recherche beobachten","Externe Signale erfassen und als Evidenz speichern.",child.id)
                 child_task=self.tasks.create(child.id,"research","Führe eine Recherchebeobachtung durch",70,"research_observation","")
                 self.messages.send(task.agent,child.id,"Arbeitsauftrag: Führe die Recherchebeobachtung aus und melde Evidenz.","task")
                 evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id}
             elif task.capability_id=="research_observation":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0])
-                self.memory.remember("research",signal["summary"],signal["score"])
-                self.messages.send(task.agent,"genesis-1",signal["summary"],"result")
-                evidence={"type":"research_observation","signal":signal}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("research",signal["summary"],signal["score"]); self.messages.send(task.agent,"genesis-1",signal["summary"],"result"); evidence={"type":"research_observation","signal":signal}
             elif task.capability_id=="offer_creation":
-                choice=rank(DEFAULT_OPPORTUNITIES)[0]
-                offer=self.commerce.create_offer(choice)
-                evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
+                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
             elif task.capability_id=="specialist_research":
-                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"])
-                self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.", "onboarding")
-                evidence={"type":"agent_created","agent_id":child.id}
+                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"]); self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.","onboarding"); evidence={"type":"agent_created","agent_id":child.id}
             elif task.capability_id=="skill_creation":
-                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern.")
-                evidence={"type":"skill_created","skill_id":skill.id}
+                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern."); evidence={"type":"skill_created","skill_id":skill.id}
             elif task.capability_id=="self_testing":
                 result=self.tools.call("run_tests")
                 if result["returncode"]!=0: raise RuntimeError(result["stderr"] or result["stdout"])
@@ -194,44 +152,27 @@ class GenesisAgent:
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
                 if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
                 evidence={"type":"connector_ready","verified":True}
-            else:
-                evidence={"type":"capability_step","verified":True}
+            else:evidence={"type":"capability_step","verified":True}
             self.tasks.complete(task.id,evidence=evidence,result="verifiziert")
             if task.capability_id:
-                self.capabilities.transition(task.capability_id,"getestet",evidence)
-                self.capabilities.transition(task.capability_id,"verifiziert",evidence)
-                self.capabilities.transition(task.capability_id,"aktiv",evidence)
-                self.agents.assign_capability(task.agent,task.capability_id)
-                self.soul.evolve(task.capability_id)
+                for state in ("getestet","verifiziert","aktiv"): self.capabilities.transition(task.capability_id,state,evidence)
+                self.agents.assign_capability(task.agent,task.capability_id); self.soul.evolve(task.capability_id)
             if task.project_id:
-                project=self.projects.get(task.project_id)
-                all_done=bool(project and project.task_ids and all((self.tasks.get(tid) and self.tasks.get(tid).status=="done") for tid in project.task_ids))
-                self.projects.transition(task.project_id,"done" if all_done else "active",evidence)
+                project=self.projects.get(task.project_id); all_done=bool(project and project.task_ids and all((self.tasks.get(tid) and self.tasks.get(tid).status=="done") for tid in project.task_ids)); self.projects.transition(task.project_id,"done" if all_done else "active",evidence)
             return evidence
         except Exception as exc:
             self.tasks.fail(task.id,str(exc))
-            if task.capability_id: self.capabilities.transition(task.capability_id,"fehlgeschlagen",{"error":str(exc)})
-            if task.project_id: self.projects.transition(task.project_id,"blocked",{"error":str(exc)})
+            if task.capability_id:self.capabilities.transition(task.capability_id,"fehlgeschlagen",{"error":str(exc)})
+            if task.project_id:self.projects.transition(task.project_id,"blocked",{"error":str(exc)})
             self.store.event("task_failed",{"task_id":task.id,"error":str(exc)})
             return {"error":str(exc)}
 
     def tick(self):
-        self.tasks.unblock()
-        cid,title,project=self.decide()
-        created=None
+        self.tasks.unblock(); cid,title,project=self.decide(); created=None
         if cid:
-            task=self.tasks.create("genesis-1","genesis",title,95,cid,project.id)
-            self.projects.attach_task(project.id,task.id)
-            created=task
-            self.store.event("genesis_decision",{"capability":cid,"title":title,"project_id":project.id})
+            task=self.tasks.create("genesis-1","genesis",title,95,cid,project.id); self.projects.attach_task(project.id,task.id); created=task; self.store.event("genesis_decision",{"capability":cid,"title":title,"project_id":project.id})
         executed=[]
         for a in self.agents.snapshot():
             task=self.tasks.start_next(a["id"])
-            if task:
-                executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
-        self.world.sync(self)
-        result=self.snapshot()
-        result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}
-        result["created_task"]=created.id if created else None
-        result["execution"]=executed
-        return result
+            if task: executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
+        self.world.sync(self); result=self.snapshot(); result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}; result["created_task"]=created.id if created else None; result["execution"]=executed; return result

@@ -1,7 +1,8 @@
-from genesis.company import CompanyProfile
-from genesis.tasks import TaskBoard
-from genesis.memory import MemoryGraph
-from genesis.artifacts import ArtifactStore
+from genesis.core.company import CompanyProfile
+from genesis.domain.tasks import TaskBoard
+from genesis.domain.memory import MemoryGraph
+from genesis.domain.artifacts import ArtifactStore
+
 def test_company_identity(): assert CompanyProfile().name=="SURVIVAL GENESIS"
 def test_task_board(tmp_path):
     b=TaskBoard(tmp_path/"tasks.json"); b.create("scout","research","Scan opportunity surfaces",90); assert b.start_next().status=="active"; assert b.start_next() is None
