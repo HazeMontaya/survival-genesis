@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Survival Genesis · Welt</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#03050a;color:#e8f0ff;font:12px Inter,system-ui,sans-serif}
+#world{width:100vw;height:100vh;display:block;background:radial-gradient(circle at 50% 45%,#111c2b 0,#05080e 45%,#020307 100%)}
+.hud{position:fixed;z-index:5;left:18px;top:16px;pointer-events:none;text-shadow:0 2px 10px #000}
+.brand{font-weight:900;letter-spacing:.18em;font-size:18px}.brand span{color:#68e8ff}.meta{margin-top:5px;color:#718198;font:10px ui-monospace,monospace;letter-spacing:.12em}
+.toolbar{position:fixed;z-index:6;right:18px;top:16px;display:flex;gap:7px}.toolbar button{background:#080e17cc;border:1px solid #243348;color:#cbd7e7;padding:8px 11px;border-radius:6px;cursor:pointer}.toolbar button:hover{border-color:#5de3ff;color:white}
+#inspector{position:fixed;z-index:7;right:18px;bottom:18px;width:320px;max-height:46vh;overflow:auto;background:#070c14ee;border:1px solid #25364a;border-radius:9px;padding:14px;display:none;box-shadow:0 12px 50px #0008}
+#inspector h2{margin:0 0 5px;font-size:15px}.muted{color:#74839a}.kv{display:grid;grid-template-columns:90px 1fr;gap:5px;margin-top:10px}.kv b{color:#8291a7;font:9px ui-monospace,monospace;text-transform:uppercase}.close{float:right;border:0;background:none;color:#8190a6;font-size:18px;cursor:pointer}
+svg text{font-family:Inter,system-ui,sans-serif}.room{cursor:pointer}.room:hover .plate{filter:brightness(1.35)}.agent{cursor:pointer}.agent:hover .node{stroke:#fff;stroke-width:2}
+</style>
+</head>
+<body>
+<svg id="world" viewBox="0 0 1800 1100" preserveAspectRatio="xMidYMid slice" aria-label="Interaktive Welt von Survival Genesis">
+<defs>
+ <radialGradient id="space"><stop stop-color="#142338"/><stop offset=".58" stop-color="#070d16"/><stop offset="1" stop-color="#020307"/></radialGradient>
+ <radialGradient id="core"><stop stop-color="#8e6cff"/><stop offset=".28" stop-color="#33265d"/><stop offset="1" stop-color="#090b12"/></radialGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#3b607c"/></marker>
+</defs>
+<rect width="1800" height="1100" fill="url(#space)"/>
+<g id="stars"></g>
+<g id="links" opacity=".9"></g>
+<g id="rooms"></g>
+<g id="agents"></g>
+<g id="effects"></g>
+</svg>
+<div class="hud"><div class="brand">SURVIVAL <span>GENESIS</span></div><div class="meta" id="meta">WELT · INITIALISIERE</div></div>
+<div class="toolbar">
+ <button id="cycle">ZYKLUS</button><button id="run">DAUERBETRIEB</button><button id="refresh">SYNCHRONISIEREN</button>
+</div>
+<div id="inspector"><button class="close" id="close">×</button><h2 id="ititle"></h2><div class="muted" id="isub"></div><div class="kv" id="idata"></div></div>
+<script>
+const NS="http://www.w3.org/2000/svg", $=id=>document.getElementById(id), svg=$("world");
+const pos={command:[900,520],research:[470,280],forge:[470,760],growth:[1320,260],sales:[1360,520],treasury:[1320,800],operations:[900,850],evolution:[900,210]};
+const links=[["command","research"],["command","forge"],["command","growth"],["command","sales"],["command","treasury"],["command","operations"],["command","evolution"],["research","forge"],["research","growth"],["forge","growth"],["growth","sales"],["sales","treasury"],["treasury","operations"],["operations","evolution"],["evolution","research"]];
+const roomById={}; let state=null;
+function el(t,a={}){const x=document.createElementNS(NS,t);for(const[k,v]of Object.entries(a))x.setAttribute(k,v);return x}
+for(let i=0;i<180;i++){let c=el("circle",{cx:Math.random()*1800,cy:Math.random()*1100,r:(Math.random()*1.5+.25).toFixed(2),fill:"#a9c9ff",opacity:(Math.random()*.5+.15).toFixed(2)});$("stars").append(c)}
+function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function show(title,sub,data){$("ititle").textContent=title;$("isub").textContent=sub;$("idata").innerHTML=Object.entries(data).map(([k,v])=>"<b>"+esc(k)+"</b><span>"+esc(v)+"</span>").join("");$("inspector").style.display="block"}
+function roomNode(r){const [x,y]=pos[r.id]||[900,520], g=el("g",{class:"room"});g.dataset.id=r.id;
+ const plate=el("rect",{class:"plate",x:x-125,y:y-58,width:250,height:116,rx:18,fill:"#09121d",stroke:"#294055","stroke-width":r.active?"2":"1"});
+ const ring=el("circle",{cx:x,cy:y-4,r:33,fill:"none",stroke:"#37657f","stroke-width":r.active?"4":"2",opacity:".8"});
+ const dot=el("circle",{cx:x,cy:y-4,r:8,fill:r.active?"#62e6aa":"#4b7891",filter:r.active?"url(#glow)":""});
+ const name=el("text",{x:x,y:y+22,"text-anchor":"middle",fill:"#e7f1ff","font-size":"16","font-weight":"800"});name.textContent=r.name;
+ const sub=el("text",{x:x,y:y+41,"text-anchor":"middle",fill:"#74879c","font-size":"9"});sub.textContent=r.subtitle;
+ const load=el("text",{x:x,y:y-34,"text-anchor":"middle",fill:"#5fe4ff","font-size":"8","letter-spacing":"1.5"});load.textContent="QUEUE "+r.queued+" · AKTIV "+r.active;
+ g.append(plate,ring,dot,name,sub,load);g.onclick=()=>show(r.name,r.subtitle,{STATUS:r.status,QUEUE:r.queued,AKTIV:r.active,AGENTEN:(state.agents||[]).filter(a=>a.room===r.id).length});
+ $("rooms").append(g);roomById[r.id]=g}
+function drawRooms(){ $("rooms").innerHTML=""; Object.values(roomById).forEach(()=>{}); (state.rooms||[]).forEach(roomNode)}
+function drawLinks(){ $("links").innerHTML="";links.forEach(([a,b])=>{const p=pos[a],q=pos[b];$("links").append(el("path",{d:"M "+p[0]+" "+p[1]+" L "+q[0]+" "+q[1],fill:"none",stroke:"#29485e","stroke-width":"2","stroke-dasharray":"6 12","marker-end":"url(#arrow)",opacity:".7"}))})}
+function drawCore(){const g=el("g",{class:"room"}),x=900,y=520;g.append(el("circle",{cx:x,cy:y,r:112,fill:"#8d6cff",opacity:".09",filter:"url(#soft)"}),el("circle",{cx:x,cy:y,r:82,fill:"url(#core)",stroke:"#8069b7","stroke-width":"2"}));let t=el("text",{x,y:y-3,"text-anchor":"middle",fill:"#fff","font-size":"20","font-weight":"900"});t.textContent="GENESIS";let s=el("text",{x,y:y+19,"text-anchor":"middle",fill:"#b9a9ff","font-size":"9","letter-spacing":"2"});s.textContent=(state.company?.stage||"STARTPHASE")+" · "+(state.runtime?.running?"LÄUFT":"BEREIT");g.append(t,s);g.onclick=()=>show("Genesis-Kern","Unternehmenssteuerung",{MISSION:state.company?.mission,MODUS:state.mode||"-",KASSE:"€"+Number(state.ledger?.cash_eur||0).toFixed(2),UMSATZ:"€"+Number(state.ledger?.earned_eur||0).toFixed(2),EXPERIMENTE:state.ledger?.experiments||0});$("rooms").append(g)}
+function drawAgents(){ $("agents").innerHTML="";const agents=state.agents||[];agents.forEach((a,i)=>{const [rx,ry]=pos[a.room]||pos.command, angle=((i%5)-2)*.22, x=rx+Math.cos(angle)*150, y=ry+Math.sin(angle)*90+(Math.floor(i/5)*28),g=el("g",{class:"agent"});g.append(el("line",{x1:rx,y1:ry,x2:x,y2:y,stroke:"#31556d","stroke-width":"1",opacity:".6"}),el("circle",{class:"node",cx:x,cy:y,r:19,fill:a.status==="arbeitet"?"#123a2d":"#101b28",stroke:a.status==="arbeitet"?"#5fe2a4":"#36536a","stroke-width":"1.5"}));let n=el("text",{x,y:y+4,"text-anchor":"middle",fill:"#e6f2ff","font-size":"8","font-weight":"800"});n.textContent=a.name.toUpperCase();let q=el("text",{x,y:y+31,"text-anchor":"middle",fill:"#73859a","font-size":"8"});q.textContent=a.status;g.append(n,q);g.onclick=()=>show(a.name,a.role,{STATUS:a.status,RAUM:a.room,AUFGABE:a.task,ENERGIE:a.energy+"%"});$("agents").append(g)})}
+function render(s){state=s;drawLinks();drawRooms();drawCore();drawAgents();$("meta").textContent="WELT · "+(s.runtime?.running?"DAUERBETRIEB":"BEREITSCHAFT")+" · "+(s.agents||[]).length+" AGENTEN · €"+Number(s.ledger?.cash_eur||0).toFixed(2)+" KASSE · "+(s.ledger?.experiments||0)+" EXPERIMENTE"}
+async function api(p,o){const r=await fetch(p,o);const j=await r.json();if(!r.ok||j.error)throw Error(j.error||r.status);return j}
+async function refresh(){try{render(await api("/api/state"))}catch(e){$("meta").textContent="WELT · FEHLER · "+e.message}}
+$("refresh").onclick=refresh;
+$("cycle").onclick=async()=>{try{await api("/api/tick",{method:"POST"});refresh()}catch(e){show("Fehler","Zyklus",{DETAIL:e.message})}};
+$("run").onclick=async()=>{try{await api(state?.runtime?.running?"/api/runtime/stop":"/api/runtime/start",{method:"POST"});refresh()}catch(e){show("Fehler","Dauerbetrieb",{DETAIL:e.message})}};
+$("close").onclick=()=>{$("inspector").style.display="none"};
+let dragging=false,last=[0,0],view=[0,0,1];
+svg.addEventListener("wheel",e=>{e.preventDefault();const z=Math.max(.55,Math.min(1.8,view[2]*(e.deltaY<0?1.08:.93)));view[2]=z;svg.style.transform="scale("+z+") translate("+view[0]+"px,"+view[1]+"px)"},{passive:false});
+svg.addEventListener("pointerdown",e=>{if(e.target!==svg)return;dragging=true;last=[e.clientX,e.clientY];svg.setPointerCapture(e.pointerId)});
+svg.addEventListener("pointermove",e=>{if(!dragging)return;view[0]+=(e.clientX-last[0])/view[2];view[1]+=(e.clientY-last[1])/view[2];last=[e.clientX,e.clientY];svg.style.transform="scale("+view[2]+") translate("+view[0]+"px,"+view[1]+"px)"});
+svg.addEventListener("pointerup",()=>dragging=false);
+refresh();setInterval(refresh,3000);
+</script>
+</body></html>
