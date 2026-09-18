@@ -14,6 +14,9 @@ from .capabilities import CapabilityRegistry
 from .projects import ProjectBoard
 from .agents import AgentDirectory
 from .social import MessageBus
+from .tools import ToolRegistry
+from .skills import SkillRegistry
+from .soul import SoulStore
 
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice","service",0,120,3,.45,.65),
@@ -43,6 +46,10 @@ class GenesisAgent:
         self.agents=AgentDirectory(root/"agents.json")
         self.agents.ensure_genesis()
         self.messages=MessageBus(root/"messages.json")
+        self.tools=ToolRegistry(root,self.store)
+        self.skills=SkillRegistry(root/"skills.json")
+        self.soul=SoulStore(root/"soul.json")
+        self.soul.ensure(self.company.mission)
         self.world=WorldModel(root/"world.json")
 
     def snapshot(self):
@@ -62,6 +69,9 @@ class GenesisAgent:
             "projects":self.projects.snapshot(),
             "agents":self.agents.snapshot(),
             "messages":self.messages.snapshot(),
+            "tools":self.tools.snapshot(),
+            "skills":self.skills.snapshot(),
+            "soul":self.soul.snapshot(),
             "world":self.world.snapshot(self),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
@@ -99,6 +109,14 @@ class GenesisAgent:
             cid="specialist_research"
             self._capability(cid,"Spezialisierte Recherche","Markt- und Evidenzsignale systematisch untersuchen.","genesis-1")
             return cid,"Recherche spezialisieren",self._project_for(cid,"Recherche-Spezialist","Einen Agenten für kontinuierliche Evidenzsuche erzeugen.")
+        if not self.skills.snapshot():
+            cid="skill_creation"
+            self._capability(cid,"Skills erschaffen","Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.","genesis-1",["agent_creation"])
+            return cid,"Wissen als wiederverwendbare Fähigkeit speichern",self._project_for(cid,"Skill-System","Eine erste wiederverwendbare Arbeitsmethode erzeugen.")
+        if not self.capabilities.active("self_testing"):
+            cid="self_testing"
+            self._capability(cid,"Selbsttests ausführen","Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.","genesis-1",["skill_creation"])
+            return cid,"Die eigene Arbeit verifizieren",self._project_for(cid,"Selbstprüfung","Tests ausführen und Evidenz für die Laufzeit erzeugen.")
         if not any(x.get("published_url") for x in self.commerce.snapshot()["offers"]):
             cid="external_publishing"
             self._capability(cid,"Externe Veröffentlichung","Ein Angebot über einen ausdrücklich konfigurierten externen Kanal veröffentlichen.","genesis-1")
@@ -117,7 +135,7 @@ class GenesisAgent:
                 self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9)
                 evidence={"type":"goal_decomposition","verified":True}
             elif task.capability_id=="agent_creation":
-                child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[])
+                child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
                 self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.", "onboarding")
                 self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
                 evidence={"type":"agent_created","agent_id":child.id}
@@ -126,9 +144,16 @@ class GenesisAgent:
                 offer=self.commerce.create_offer(choice)
                 evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
             elif task.capability_id=="specialist_research":
-                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"])
+                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"])
                 self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.", "onboarding")
                 evidence={"type":"agent_created","agent_id":child.id}
+            elif task.capability_id=="skill_creation":
+                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern.")
+                evidence={"type":"skill_created","skill_id":skill.id}
+            elif task.capability_id=="self_testing":
+                result=self.tools.call("run_tests")
+                if result["returncode"]!=0: raise RuntimeError(result["stderr"] or result["stdout"])
+                evidence={"type":"test_run","returncode":result["returncode"],"stdout":result["stdout"][-3000:]}
             elif task.capability_id=="external_publishing":
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
                 if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
@@ -141,6 +166,7 @@ class GenesisAgent:
                 self.capabilities.transition(task.capability_id,"verifiziert",evidence)
                 self.capabilities.transition(task.capability_id,"aktiv",evidence)
                 self.agents.assign_capability(task.agent,task.capability_id)
+                self.soul.evolve(task.capability_id)
             if task.project_id:
                 self.projects.transition(task.project_id,"done",evidence)
             return evidence
