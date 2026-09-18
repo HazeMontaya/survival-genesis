@@ -6,12 +6,22 @@ class RevenueEvent:
     source: str
     amount_eur: float
     verified: bool = False
+    evidence_id: str = ""
 
 class Economy:
-    def __init__(self, store: StateStore): self.store = store
-    def record_revenue(self, event: RevenueEvent) -> Ledger:
-        if event.amount_eur <= 0 or not event.verified: raise ValueError("Only positive, verified revenue can enter the economic ledger.")
-        ledger=self.store.load(); ledger.cash_eur+=event.amount_eur; ledger.earned_eur+=event.amount_eur; ledger.revenue_events+=1; self.store.save(ledger); self.store.event("revenue",{"source":event.source,"amount_eur":event.amount_eur}); return ledger
-    def record_spend(self, amount_eur: float, reason: str) -> Ledger:
-        if amount_eur <= 0: raise ValueError("Spend must be positive.")
-        ledger=self.store.load(); ledger.cash_eur-=amount_eur; ledger.spent_eur+=amount_eur; self.store.save(ledger); self.store.event("spend",{"reason":reason,"amount_eur":amount_eur}); return ledger
+    def __init__(self, store: StateStore, evidence=None, resources=None):
+        self.store=store; self.evidence=evidence; self.resources=resources
+    def record_revenue(self,event:RevenueEvent)->Ledger:
+        if event.amount_eur<=0 or not event.verified or not event.evidence_id: raise ValueError("Revenue requires positive amount, verification and evidence.")
+        if self.evidence and not self.evidence.verify(event.evidence_id): raise ValueError("Revenue evidence is missing or invalid.")
+        ledger=self.store.load(); ledger.cash_eur+=event.amount_eur; ledger.earned_eur+=event.amount_eur; ledger.revenue_events+=1; self.store.save(ledger)
+        if self.resources: self.resources.credit_cash(event.amount_eur)
+        self.store.event("revenue",{"source":event.source,"amount_eur":event.amount_eur,"evidence_id":event.evidence_id}); return ledger
+    def record_spend(self,amount_eur,reason,evidence_id="")->Ledger:
+        if amount_eur<=0 or not evidence_id: raise ValueError("Spend requires positive amount and evidence.")
+        if self.evidence and not self.evidence.verify(evidence_id): raise ValueError("Spend evidence is missing or invalid.")
+        ledger=self.store.load()
+        if ledger.net_cash<amount_eur: raise ValueError("insufficient available cash")
+        ledger.cash_eur-=amount_eur; ledger.spent_eur+=amount_eur; self.store.save(ledger)
+        if self.resources: self.resources.debit_cash(amount_eur)
+        self.store.event("spend",{"reason":reason,"amount_eur":amount_eur,"evidence_id":evidence_id}); return ledger

@@ -1,4 +1,6 @@
 from genesis.domain.economy import Economy
+from genesis.domain.evidence import EvidenceLedger
+from genesis.domain.orders import OrderEngine
 from genesis.core.opportunities import Opportunity, rank
 from genesis.core.state import StateStore
 from genesis.core.survival import SurvivalPolicy
@@ -68,7 +70,10 @@ class GenesisAgent:
     def __init__(self, store=None, policy=None):
         self.store=store or StateStore()
         self.policy=policy or SurvivalPolicy()
-        self.economy=Economy(self.store)
+        self.evidence=EvidenceLedger(root/"evidence.json")
+        self.orders=OrderEngine(root/"orders.json")
+        self.resources=ResourceLedger(root/"resources.json")
+        self.economy=Economy(self.store,self.evidence,self.resources)
         root=self.store.path.parent
         self.company=CompanyProfile()
         self.tasks=TaskBoard(root/"tasks.json")
@@ -87,7 +92,6 @@ class GenesisAgent:
         self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.runtime_policy)
         self.needs=NeedEngine(self)
         self.treasury=Treasury(self.store)
-        self.resources=ResourceLedger(root/"resources.json")
         self.skills=SkillRegistry(root/"skills.json")
         self.soul=SoulStore(root/"soul.json")
         self.soul.ensure(self.company.mission)
@@ -102,7 +106,7 @@ class GenesisAgent:
             "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
             "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
             "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"runtime":self.runtime_db.snapshot(),
+            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"orders":self.orders.snapshot(),"runtime":self.runtime_db.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
@@ -129,9 +133,9 @@ class GenesisAgent:
         if task.capability_id:self.capabilities.transition(task.capability_id,"in_entwicklung")
         try:
             if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); evidence={"type":"observation","signal":signal}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self.evidence.record(task.id,"observation",signal["summary"],signal,"signal-engine"); evidence={"type":"observation","signal":signal,"evidence_id":ev.id}
             elif task.capability_id=="goal_decomposition":
-                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); evidence={"type":"goal_decomposition","verified":True}
+                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); ev=self.evidence.record(task.id,"goal_decomposition","Mission in überprüfbare Teilziele zerlegt",{"mission":self.company.mission},"runtime"); evidence={"type":"goal_decomposition","verified":True,"evidence_id":ev.id}
             elif task.capability_id=="agent_creation":
                 child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
                 self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.","onboarding")
@@ -143,7 +147,7 @@ class GenesisAgent:
             elif task.capability_id=="research_observation":
                 signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("research",signal["summary"],signal["score"]); self.messages.send(task.agent,"genesis-1",signal["summary"],"result"); evidence={"type":"research_observation","signal":signal}
             elif task.capability_id=="offer_creation":
-                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
+                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); ev=self.evidence.record(offer["id"],"offer_created","Angebot als Artefakt erzeugt",offer,"commerce"); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"],"evidence_id":ev.id}
             elif task.capability_id=="specialist_research":
                 child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"]); self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.","onboarding"); evidence={"type":"agent_created","agent_id":child.id}
             elif task.capability_id=="skill_creation":
@@ -156,7 +160,9 @@ class GenesisAgent:
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
                 if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
                 evidence={"type":"connector_ready","verified":True}
-            else:evidence={"type":"capability_step","verified":True}
+            else:
+                ev=self.evidence.record(task.id,"capability_step",f"Capability {task.capability_id} ausgeführt",{"task_id":task.id},"runtime")
+                evidence={"type":"capability_step","verified":True,"evidence_id":ev.id}
             self.tasks.complete(task.id,evidence=evidence,result="verifiziert")
             if task.capability_id:
                 for state in ("getestet","verifiziert","aktiv"): self.capabilities.transition(task.capability_id,state,evidence)
