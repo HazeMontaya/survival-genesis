@@ -11,11 +11,12 @@ class ToolSpec:
 
 class ToolRegistry:
     """Local zero-cost tool layer with explicit, auditable handlers."""
-    def __init__(self,root,store,memory=None,messages=None):
+    def __init__(self,root,store,memory=None,messages=None,policy=None):
         self.root=Path(root).resolve()
         self.store=store
         self.memory=memory
         self.messages=messages
+        self.policy=policy
         self.specs=[
             ToolSpec("read_file","Read a project file","safe"),
             ToolSpec("write_file","Write a project file inside the workspace","caution"),
@@ -36,6 +37,7 @@ class ToolRegistry:
 
     def call(self,tool_id,**kwargs):
         spec=next((x for x in self.specs if x.id==tool_id),None)
+        if self.policy: self.policy.require(tool_id,spec.risk if spec else "forbidden",authority=str(kwargs.pop("authority","self")),params=kwargs)
         if not spec or not spec.enabled: raise RuntimeError(f"tool unavailable: {tool_id}")
         if tool_id=="read_file":
             p=self._path(kwargs["path"]); result=p.read_text(encoding="utf-8")
