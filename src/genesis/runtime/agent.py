@@ -2,6 +2,8 @@ from genesis.domain.economy import Economy
 from genesis.domain.evidence import EvidenceLedger
 from genesis.domain.orders import OrderEngine
 from genesis.core.opportunities import Opportunity, rank
+from genesis.domain.opportunities import OpportunityLedger
+from genesis.integrations.distribution import DistributionEngine
 from genesis.core.state import StateStore
 from genesis.core.survival import SurvivalPolicy
 from genesis.domain.tasks import TaskBoard
@@ -73,6 +75,8 @@ class GenesisAgent:
         self.policy=policy or SurvivalPolicy()
         root=self.store.path.parent
         self.evidence=EvidenceLedger(root/"evidence.json")
+        self.opportunities=OpportunityLedger(root/"opportunities.json")
+        self.distribution=DistributionEngine(root/"publications.json")
         self.orders=OrderEngine(root/"orders.json")
         self.resources=ResourceLedger(root/"resources.json")
         self.economy=Economy(self.store,self.evidence,self.resources)
@@ -108,7 +112,7 @@ class GenesisAgent:
             "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
             "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
             "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"orders":self.orders.snapshot(),"evolution":self.evolution.snapshot(),"runtime":self.runtime_db.snapshot(),
+            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"opportunities":self.opportunities.snapshot(),"orders":self.orders.snapshot(),"distribution":self.distribution.snapshot(),"evolution":self.evolution.snapshot(),"runtime":self.runtime_db.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
@@ -135,7 +139,7 @@ class GenesisAgent:
         if task.capability_id:self.capabilities.transition(task.capability_id,"in_entwicklung")
         try:
             if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self.evidence.record(task.id,"observation",signal["summary"],signal,"signal-engine"); evidence={"type":"observation","signal":signal,"evidence_id":ev.id}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self.evidence.record(task.id,"observation",signal["summary"],signal,"signal-engine"); opp=self.opportunities.record(DEFAULT_OPPORTUNITIES[0].name,DEFAULT_OPPORTUNITIES[0].channel,signal["score"],[ev.id]); evidence={"type":"observation","signal":signal,"opportunity_id":opp.id,"evidence_id":ev.id}
             elif task.capability_id=="goal_decomposition":
                 self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); ev=self.evidence.record(task.id,"goal_decomposition","Mission in überprüfbare Teilziele zerlegt",{"mission":self.company.mission},"runtime"); evidence={"type":"goal_decomposition","verified":True,"evidence_id":ev.id}
             elif task.capability_id=="agent_creation":
