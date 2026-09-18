@@ -3,65 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Survival Genesis — Ecosystem</title>
+<title>SURVIVAL GENESIS — Enterprise Control Center</title>
 <style>
-:root{--bg:#071019;--panel:#0c1722;--card:#101f2d;--line:#203244;--text:#e8f0f7;--muted:#8da0b1;--good:#55d69a;--warn:#f0c36a;--accent:#72a7ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:1400px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:18px}.brand{font-size:24px;font-weight:750}.sub{color:var(--muted);margin-top:4px}.pill{border:1px solid var(--line);padding:7px 10px;border-radius:999px;color:var(--good)}
-.grid{display:grid;grid-template-columns:1.7fr 1fr;gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}.panel h2{font-size:14px;margin:0 0 12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:var(--card);border:1px solid var(--line);padding:12px;border-radius:10px}.label{color:var(--muted);font-size:12px}.value{font-size:20px;font-weight:700;margin-top:5px}.eco{min-height:430px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 45%,#10273a 0,#091622 48%,#071019 100%)}svg{width:100%;height:390px}.node{cursor:pointer}.node rect{fill:var(--card);stroke:var(--line);stroke-width:1.5}.node text{fill:var(--text);font-size:12px}.link{stroke:#31516b;stroke-width:1.5;stroke-dasharray:5 5}.core rect{stroke:var(--accent)}.good rect{stroke:var(--good)}.right{display:grid;gap:16px}.agent{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.agent:last-child{border-bottom:0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:7px}.events{max-height:230px;overflow:auto}.event{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.event span{color:var(--muted)}button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer}button:hover{border-color:var(--accent)}.controls{display:flex;gap:8px;flex-wrap:wrap}.notice{color:var(--warn);font-size:12px;margin-top:10px}
-@media(max-width:850px){main{padding:14px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.eco{min-height:390px}}
+:root{--bg:#05070d;--panel:rgba(11,15,25,.78);--panel2:rgba(17,23,36,.72);--line:rgba(140,160,190,.16);--text:#eef3ff;--muted:#77849b;--cyan:#65e6ff;--violet:#9d7cff;--green:#64efb0;--orange:#ffad6b;--pink:#ff78bd;--gold:#f4d47b}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#05070d;color:var(--text);font:13px Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 25%,rgba(101,230,255,.07),transparent 28%),radial-gradient(circle at 15% 80%,rgba(157,124,255,.08),transparent 25%),radial-gradient(circle at 90% 60%,rgba(255,120,189,.05),transparent 25%);z-index:-2}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,#000,transparent 85%);z-index:-1}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);background:rgba(5,8,15,.88);backdrop-filter:blur(20px);padding:24px 16px;display:flex;flex-direction:column}.logo{display:flex;gap:11px;align-items:center;margin-bottom:30px}.mark{width:36px;height:36px;border-radius:11px;border:1px solid rgba(101,230,255,.45);box-shadow:0 0 28px rgba(101,230,255,.12) inset,0 0 18px rgba(101,230,255,.12);display:grid;place-items:center;color:var(--cyan);font-weight:900}.brand{font-size:12px;letter-spacing:.19em;font-weight:800}.brand small{display:block;color:var(--muted);letter-spacing:.08em;margin-top:4px;font-size:9px}.nav{display:grid;gap:5px}.nav button{all:unset;padding:11px 12px;border-radius:9px;color:#8793a8;cursor:pointer}.nav button.active,.nav button:hover{background:rgba(255,255,255,.045);color:#fff}.nav b{font-size:10px;letter-spacing:.12em;margin-left:12px;color:#4f5b70}.foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;color:#536076;font-size:10px;line-height:1.7}.main{padding:22px 26px 40px;max-width:1800px;width:100%;margin:auto}.top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--cyan);text-transform:uppercase}.title{font-size:27px;font-weight:800;letter-spacing:-.04em;margin:7px 0 3px}.sub{color:var(--muted)}.actions{display:flex;gap:7px}.btn{border:1px solid var(--line);background:rgba(15,21,33,.78);color:#dbe5f5;border-radius:8px;padding:9px 12px;cursor:pointer}.btn.primary{border-color:rgba(101,230,255,.4);box-shadow:0 0 20px rgba(101,230,255,.06)}.btn:hover{border-color:rgba(101,230,255,.55)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:9px}.kpi{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:13px 14px;position:relative;overflow:hidden}.kpi:after{content:"";position:absolute;inset:auto 0 0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}.klabel{font-size:9px;letter-spacing:.14em;color:#66748a;text-transform:uppercase}.kval{font-size:20px;font-weight:750;margin-top:7px}.delta{font-size:9px;color:var(--green);margin-left:6px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.55fr);gap:9px}.panel{border:1px solid var(--line);background:var(--panel);border-radius:12px;box-shadow:0 18px 70px rgba(0,0,0,.18);overflow:hidden}.ph{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.ph h2{font-size:10px;letter-spacing:.16em;margin:0;color:#aab6ca}.tiny{font-size:9px;color:#5f6d83}.status{display:flex;align-items:center;gap:6px;color:#72eab5}.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 1.6s infinite}@keyframes pulse{50%{opacity:.3;transform:scale(.7)}}
+.map{height:590px;position:relative;overflow:hidden;background:radial-gradient(circle at center,rgba(101,230,255,.055),transparent 30%)}.map svg{width:100%;height:100%}.gridline{stroke:#8ba1bf;stroke-opacity:.06;stroke-width:1}.connection{stroke:#63dff8;stroke-opacity:.18;stroke-width:1.2;stroke-dasharray:3 8;animation:dash 9s linear infinite}@keyframes dash{to{stroke-dashoffset:-90}}.orb{filter:drop-shadow(0 0 12px rgba(101,230,255,.35));animation:float 4s ease-in-out infinite}@keyframes float{50%{transform:translateY(-4px)}}.room rect{fill:rgba(13,19,30,.9);stroke:rgba(140,160,190,.22);transition:.2s}.room:hover rect{stroke:rgba(101,230,255,.7);fill:rgba(20,29,43,.96)}.room text{fill:#d9e2ef;font-size:11px}.room .meta{fill:#68768c;font-size:8px;letter-spacing:.08em}.core rect{stroke:rgba(157,124,255,.72);fill:rgba(20,15,36,.94);filter:drop-shadow(0 0 20px rgba(157,124,255,.18))}.core .ring{fill:none;stroke:var(--violet);stroke-opacity:.45;stroke-dasharray:2 7;animation:spin 16s linear infinite;transform-origin:50% 50%}@keyframes spin{to{transform:rotate(360deg)}}.agent-dot{fill:var(--cyan);filter:drop-shadow(0 0 7px var(--cyan));animation:agent 2s infinite}.agent-dot:nth-child(3n){animation-delay:.7s}@keyframes agent{50%{opacity:.25}}
+.rightcol{display:grid;grid-template-rows:auto auto 1fr;gap:9px}.agentlist{padding:4px 14px}.agentrow{display:grid;grid-template-columns:8px 1fr auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.agentrow:last-child{border:0}.adot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}.aname{font-weight:650}.arole{font-size:9px;color:#657287;margin-top:3px}.astate{text-align:right;color:#8794a8;font-size:9px}.command{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px}.command .btn{width:100%}.events{height:100%;max-height:330px;overflow:auto;padding:4px 14px}.event{padding:10px 0;border-bottom:1px solid var(--line)}.etime{font-size:8px;color:#556278;float:right}.etype{color:var(--cyan);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.emsg{font-size:10px;color:#9ba8bb;margin-top:4px}.footerline{margin-top:9px;color:#465267;font-size:9px;display:flex;justify-content:space-between}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.workspace{grid-template-columns:1fr}.rightcol{grid-template-columns:1fr 1fr 1fr;grid-template-rows:none}.events{max-height:240px}}@media(max-width:800px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.rightcol{grid-template-columns:1fr}.map{height:520px}.top{align-items:flex-start;gap:15px;flex-direction:column}}
 </style>
 </head>
 <body>
-<main>
-<section class="top">
-<div><div class="brand">SURVIVAL GENESIS</div><div class="sub">Autonomous company & agent ecosystem · zero-capital bootstrap</div></div>
-<div class="pill"><span class="dot"></span><span id="mode">BOOTSTRAP</span></div>
+<div class="app">
+<aside class="sidebar">
+<div class="logo"><div class="mark">SG</div><div class="brand">SURVIVAL GENESIS<small>ENTERPRISE OS · v0.2</small></div></div>
+<div class="nav"><b>COMMAND</b><button class="active">◈ Ecosystem</button><button>⌁ Strategy</button><button>◌ Intelligence</button><button>◇ Products</button><button>△ Growth</button><button>▣ Treasury</button><button>◫ Operations</button><button>✦ Evolution</button></div>
+<div class="foot">AUTONOMOUS COMPANY RUNTIME<br>Zero-capital invariant · External execution guarded<br><br>All revenue must be independently verified before recognition.</div>
+</aside>
+<main class="main">
+<header class="top"><div><div class="eyebrow">Company Control Center / Live Topology</div><div class="title">The company is a system.</div><div class="sub">Rooms, agents, capital, experiments and execution — one observable operating surface.</div></div><div class="actions"><button class="btn" id="refresh">Refresh</button><button class="btn" id="tick">Run Cycle</button><button class="btn primary" id="toggle">Start Runtime</button></div></header>
+<section class="kpis">
+<div class="kpi"><div class="klabel">Cash Position</div><div class="kval" id="cash">€0.00</div></div>
+<div class="kpi"><div class="klabel">Verified Revenue</div><div class="kval" id="revenue">€0.00</div></div>
+<div class="kpi"><div class="klabel">Net Surplus</div><div class="kval" id="surplus">€0.00</div></div>
+<div class="kpi"><div class="klabel">Agents</div><div class="kval" id="agentCount">—</div></div>
+<div class="kpi"><div class="klabel">Rooms</div><div class="kval" id="roomCount">—</div></div>
+<div class="kpi"><div class="klabel">Experiments</div><div class="kval" id="experiments">0</div></div>
 </section>
-<section class="stats">
-<div class="stat"><div class="label">Cash</div><div class="value" id="cash">€0.00</div></div>
-<div class="stat"><div class="label">Verified revenue</div><div class="value" id="revenue">€0.00</div></div>
-<div class="stat"><div class="label">Active agents</div><div class="value" id="agents">3</div></div>
-<div class="stat"><div class="label">Experiments</div><div class="value" id="experiments">0</div></div>
-</section>
-<div style="height:16px"></div>
-<section class="grid">
-<div class="panel eco">
-<h2>LIVE ECOSYSTEM</h2>
-<svg viewBox="0 0 760 390" role="img" aria-label="Survival Genesis ecosystem graph">
-<line class="link" x1="380" y1="195" x2="150" y2="95"/><line class="link" x1="380" y1="195" x2="150" y2="295"/>
-<line class="link" x1="380" y1="195" x2="610" y2="95"/><line class="link" x1="380" y1="195" x2="610" y2="295"/>
-<line class="link" x1="150" y1="95" x2="610" y2="95"/><line class="link" x1="150" y1="295" x2="610" y2="295"/>
-<g class="node core" transform="translate(300,150)"><rect rx="14" width="160" height="90"/><text x="80" y="30" text-anchor="middle">GENESIS CORE</text><text x="80" y="53" text-anchor="middle">Decision + Memory</text><text x="80" y="73" text-anchor="middle" fill="#8da0b1">€0 bootstrap</text></g>
-<g class="node good" data-name="Research" transform="translate(70,55)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">RESEARCH</text><text x="80" y="53" text-anchor="middle">Market discovery</text></g>
-<g class="node" data-name="Products" transform="translate(70,255)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">PRODUCTS</text><text x="80" y="53" text-anchor="middle">Digital + services</text></g>
-<g class="node" data-name="Distribution" transform="translate(530,55)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">DISTRIBUTION</text><text x="80" y="53" text-anchor="middle">Listings + content</text></g>
-<g class="node" data-name="Economy" transform="translate(530,255)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">ECONOMY</text><text x="80" y="53" text-anchor="middle">Revenue + reinvestment</text></g>
+<section class="workspace">
+<div class="panel">
+<div class="ph"><h2>LIVE ORGANIZATIONAL TOPOLOGY</h2><div class="status"><span class="pulse"></span><span id="runtime">LOCAL RUNTIME STANDBY</span></div></div>
+<div class="map">
+<svg viewBox="0 0 980 590" preserveAspectRatio="xMidYMid meet">
+<defs><radialGradient id="coreGlow"><stop stop-color="#9d7cff" stop-opacity=".25"/><stop offset="1" stop-color="#9d7cff" stop-opacity="0"/></radialGradient></defs>
+<g opacity=".55">
+<path class="gridline" d="M40 90H940M40 180H940M40 270H940M40 360H940M40 450H940M40 540H940M130 35V555M250 35V555M370 35V555M490 35V555M610 35V555M730 35V555M850 35V555"/>
+</g>
+<circle cx="490" cy="295" r="175" fill="url(#coreGlow)"/>
+<g class="connection"><path d="M490 295L170 130"/><path d="M490 295L170 455"/><path d="M490 295L810 130"/><path d="M490 295L810 455"/><path d="M490 295L320 75"/><path d="M490 295L660 75"/><path d="M490 295L320 515"/><path d="M490 295L660 515"/></g>
+<g class="core"><circle class="ring" cx="490" cy="295" r="105" stroke-width="1"/><circle class="ring" cx="490" cy="295" r="120" stroke-width="1" style="animation-duration:25s;animation-direction:reverse"/><rect x="385" y="230" rx="18" width="210" height="130"/><text x="490" y="268" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">GENESIS CORE</text><text x="490" y="291" text-anchor="middle" fill="#9ba8bb" font-size="10">STRATEGY · MEMORY · GOVERNANCE</text><text x="490" y="318" text-anchor="middle" fill="#65e6ff" font-size="10">DECISION ENGINE ONLINE</text><text x="490" y="340" text-anchor="middle" fill="#66748a" font-size="9">CAPITAL GATE: €0 / EXTERNAL OFF</text></g>
+<circle class="agent-dot" cx="90" cy="55" r="2.8"/><circle class="agent-dot" cx="227" cy="138" r="1.5"/><circle class="agent-dot" cx="364" cy="221" r="1.5"/><circle class="agent-dot" cx="501" cy="304" r="1.5"/><circle class="agent-dot" cx="638" cy="387" r="2.8"/><circle class="agent-dot" cx="775" cy="470" r="1.5"/><circle class="agent-dot" cx="112" cy="73" r="1.5"/><circle class="agent-dot" cx="249" cy="156" r="1.5"/><circle class="agent-dot" cx="386" cy="239" r="2.8"/><circle class="agent-dot" cx="523" cy="322" r="1.5"/><circle class="agent-dot" cx="660" cy="405" r="1.5"/><circle class="agent-dot" cx="797" cy="488" r="1.5"/><circle class="agent-dot" cx="134" cy="91" r="2.8"/><circle class="agent-dot" cx="271" cy="174" r="1.5"/><circle class="agent-dot" cx="408" cy="257" r="1.5"/><circle class="agent-dot" cx="545" cy="340" r="1.5"/><circle class="agent-dot" cx="682" cy="423" r="2.8"/><circle class="agent-dot" cx="819" cy="506" r="1.5"/><circle class="agent-dot" cx="156" cy="109" r="1.5"/><circle class="agent-dot" cx="293" cy="192" r="1.5"/><circle class="agent-dot" cx="430" cy="275" r="2.8"/><circle class="agent-dot" cx="567" cy="358" r="1.5"/><circle class="agent-dot" cx="704" cy="441" r="1.5"/><circle class="agent-dot" cx="841" cy="524" r="1.5"/>
+<g class="room" transform="translate(75 90)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">RESEARCH LAB</text><text class="meta" x="16" y="49">SIGNALS · MARKETS · DISCOVERY</text><text x="16" y="67" fill="#65e6ff" font-size="9">SCOUT / ATLAS</text></g>
+<g class="room" transform="translate(75 415)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">PRODUCT FORGE</text><text class="meta" x="16" y="49">BUILD · PACKAGE · QA</text><text x="16" y="67" fill="#ffad6b" font-size="9">FORGE</text></g>
+<g class="room" transform="translate(715 90)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">GROWTH STUDIO</text><text class="meta" x="16" y="49">BRAND · CONTENT · DISTRIBUTION</text><text x="16" y="67" fill="#ff78bd" font-size="9">MUSE</text></g>
+<g class="room" transform="translate(715 415)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">REVENUE FLOOR</text><text class="meta" x="16" y="49">OFFERS · LEADS · CONVERSION</text><text x="16" y="67" fill="#64efb0" font-size="9">CLOSER · GUARDED</text></g>
+<g class="room" transform="translate(290 35)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">TREASURY</text><text class="meta" x="14" y="42">VERIFY · RESERVE · REINVEST</text></g>
+<g class="room" transform="translate(540 35)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">INTELLIGENCE</text><text class="meta" x="14" y="42">SIGNALS → DECISIONS</text></g>
+<g class="room" transform="translate(290 500)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">OPERATIONS</text><text class="meta" x="14" y="42">EXECUTION · FULFILLMENT</text></g>
+<g class="room" transform="translate(540 500)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">EVOLUTION LAB</text><text class="meta" x="14" y="42">EXPERIMENTS · LEARNING</text></g>
 </svg>
-<div class="notice">Real external execution remains gated until provider credentials and explicit policy switches are configured.</div>
 </div>
-<div class="right">
-<div class="panel"><h2>AGENTS</h2>
-<div class="agent"><div><span class="dot"></span>Research Agent</div><span>scanning</span></div>
-<div class="agent"><div><span class="dot"></span>Product Agent</div><span>ready</span></div>
-<div class="agent"><div><span class="dot"></span>Revenue Agent</div><span>guarded</span></div>
 </div>
-<div class="panel"><h2>CONTROL</h2><div class="controls"><button id="tick">Run tick</button><button id="reset">Reset demo state</button></div></div>
-<div class="panel"><h2>EVENT STREAM</h2><div class="events" id="events" aria-live="polite"></div></div>
+<div class="rightcol">
+<div class="panel"><div class="ph"><h2>AGENT FLEET</h2><span class="tiny" id="fleet">—</span></div><div class="agentlist" id="agentsList"></div></div>
+<div class="panel"><div class="ph"><h2>COMMAND DECK</h2><span class="tiny">POLICY-GATED</span></div><div class="command"><button class="btn" id="pause">Pause</button><button class="btn" id="focus">Focus Core</button><button class="btn" id="discover">Discover</button><button class="btn" id="export">Export State</button></div></div>
+<div class="panel"><div class="ph"><h2>EVENT STREAM</h2><span class="tiny">LIVE</span></div><div class="events" id="events"></div></div>
 </div>
 </section>
+<div class="footerline"><span id="clock">—</span><span>Survival Genesis · observable state only · no simulated revenue</span></div>
 </main>
+</div>
 <script>
-(function(){
-const s={cash:0,revenue:0,experiments:0};
 const $=id=>document.getElementById(id);
-function render(){ $('cash').textContent='€'+s.cash.toFixed(2);$('revenue').textContent='€'+s.revenue.toFixed(2);$('experiments').textContent=s.experiments;$('mode').textContent=s.cash>0?'PRODUCTIVE':'BOOTSTRAP';}
-function event(msg){const d=document.createElement('div');d.className='event';d.innerHTML='<b>'+msg+'</b> <span>· '+new Date().toLocaleTimeString()+'</span>';$('events').prepend(d);}
-$('tick').addEventListener('click',()=>{s.experiments++;render();event('Experiment selected: zero-cost opportunity scan');});
-$('reset').addEventListener('click',()=>{s.cash=0;s.revenue=0;s.experiments=0;$('events').innerHTML='';render();event('System reset to €0 bootstrap state');});
-document.querySelectorAll('.node[data-name]').forEach(n=>n.addEventListener('click',()=>event('Module selected: '+n.dataset.name)));
-render();event('Genesis Core initialized at €0.00');
-})();
+let runtimeRunning=false;
+function money(x){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(x||0)}
+function log(type,msg){const d=document.createElement('div');d.className='event';d.innerHTML='<span class="etime">'+new Date().toLocaleTimeString()+'</span><div class="etype">'+type+'</div><div class="emsg">'+msg+'</div>';$('events').prepend(d)}
+async function api(path,opts){const r=await fetch(path,opts);return r.json()}
+function render(s){const l=s.ledger||{};$('cash').textContent=money(l.cash_eur);$('revenue').textContent=money(l.earned_eur);$('surplus').textContent=money((l.cash_eur||0)-(l.reserved_eur||0));$('agentCount').textContent=s.agents?.length??0;$('roomCount').textContent=s.rooms?.length??0;$('experiments').textContent=l.experiments??0;$('fleet').textContent=(s.agents||[]).filter(a=>a.status==='active').length+' ACTIVE';runtimeRunning=s.runtime?.running||false;$('runtime').textContent=runtimeRunning?'RUNTIME ACTIVE':'LOCAL RUNTIME STANDBY';$('toggle').textContent=runtimeRunning?'Stop Runtime':'Start Runtime';$('agentsList').innerHTML=(s.agents||[]).map(a=>'<div class="agentrow"><span class="adot"></span><div><div class="aname">'+a.name+'</div><div class="arole">'+a.role+' · '+a.room+'</div></div><div class="astate">'+a.status+'<br>'+a.task+'</div></div>').join('');$('clock').textContent='STATE '+new Date(s.clock).toLocaleString()}
+async function refresh(){try{const s=await api('/api/state');render(s)}catch(e){$('runtime').textContent='SERVER OFFLINE';}}
+$('refresh').onclick=refresh;
+$('tick').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('CYCLE','Experiment selected: '+(r.selected?.name||'decision cycle'));refresh()};
+$('toggle').onclick=async()=>{const path=runtimeRunning?'/api/runtime/stop':'/api/runtime/start';const r=await api(path,{method:'POST'});log('RUNTIME',r.running?'Autonomous runtime started':'Autonomous runtime stopped');refresh()};
+$('pause').onclick=async()=>{await api('/api/runtime/stop',{method:'POST'});log('CONTROL','Runtime paused by operator');refresh()};
+$('focus').onclick=()=>log('NAVIGATION','Genesis Core focused — strategy, memory and governance');
+$('discover').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('RESEARCH','Discovery cycle launched: '+(r.selected?.channel||'opportunity'));refresh()};
+$('export').onclick=async()=>{const s=await api('/api/state');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download='survival-genesis-state.json';a.click();log('EXPORT','Current observable state exported')};
+log('SYSTEM','Genesis Control Center loaded');
+refresh();setInterval(refresh,3000);
 </script>
 </body>
 </html>
