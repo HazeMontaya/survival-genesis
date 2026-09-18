@@ -49,7 +49,7 @@ The web client is a complete world-first operating environment, not a convention
 
 ## Runtime model
 
-The world starts with one Genesis agent and only the runtime substrate. Missing capabilities are derived from persisted state. Work is dependency-aware; capabilities are activated only after execution and evidence. The SVG is a projection of actual runtime entities, not a prebuilt simulation.
+The world starts with one Genesis agent and only the runtime substrate. Missing capabilities are derived from persisted state. Work is dependency-aware; projects now materialize into persistent workflows and stages, so production flow is visible as executable state rather than decorative UI. Capabilities are activated only after execution and evidence. The SVG is a projection of actual runtime entities, not a prebuilt simulation.
 
 Operating loop: observe → understand → decide → build → verify → learn → continue.
 
