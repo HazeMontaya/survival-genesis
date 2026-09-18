@@ -26,7 +26,7 @@ To run without activating the environment:
 
 ## Operational state
 
-The local control center is backed by the actual Python runtime. The runtime persists the economic ledger, append-only events, task queue, memory graph and locally generated artifacts under `workspace/`.
+The interactive company world is backed by the actual Python runtime. The SVG world is a projection of persisted runtime state, not a separate simulation. The runtime persists the economic ledger, append-only events, task queue, memory graph and locally generated artifacts under `workspace/`.
 
 Implemented:
 - persistent economic ledger and audit event log
@@ -35,6 +35,8 @@ Implemented:
 - local artifact factory producing reviewable Markdown assets
 - zero-capital opportunity ranking and experiment loop
 - live state API and autonomous 8-second runtime
+- persistent self-diagnosis of missing capabilities and world growth
+- SVG company world that grows from real agents, tasks, artifacts, connectors and capability gaps
 - manual cycle, start and stop controls
 - honest revenue accounting: unverified revenue is rejected
 - financial execution and trading disabled by default
