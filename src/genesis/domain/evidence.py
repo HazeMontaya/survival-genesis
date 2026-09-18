@@ -42,6 +42,8 @@ class EvidenceLedger:
         self.items.append(asdict(item)); self._save(); return item
 
     def verify(self, evidence_id, verifier="runtime"):
+        if not str(verifier).strip():
+            raise ValueError("evidence verification requires a verifier identity")
         item=next((x for x in self.items if x["id"]==evidence_id),None)
         if not item: raise KeyError(evidence_id)
         if item["status"]=="rejected": raise ValueError("rejected evidence cannot be verified")
