@@ -17,6 +17,7 @@ def ecosystem_snapshot(agent):
         "agents": state["agents"],
         "tasks": state["tasks"],
         "projects": state["projects"],
+        "workflows": state["workflows"],
         "capabilities": state["capabilities"],
         "memory": state["memory"],
         "evidence": state["evidence"],
