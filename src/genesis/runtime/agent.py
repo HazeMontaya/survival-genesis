@@ -224,8 +224,16 @@ class GenesisAgent:
         for a in self.agents.snapshot():
             task = self.tasks.start_next(a["id"])
             if task:
-                self.runtime_db.event("task_started", {"task_id": task.id}, actor=a["id"])
-                executed.append({"task_id": task.id, "agent": a["id"], "result": self.execute(task)})
+                self.agents.set_activity(a["id"], "walking", task.room)
+                self.runtime_db.event("agent_moved", {"agent_id": a["id"], "room": task.room, "task_id": task.id}, actor=a["id"])
+                self.agents.set_activity(a["id"], "processing", task.room)
+                self.runtime_db.event("task_started", {"task_id": task.id, "agent_id": a["id"], "room": task.room}, actor=a["id"])
+                result = self.execute(task)
+                final_activity = "completed" if "error" not in result else "error"
+                self.agents.set_activity(a["id"], final_activity, task.room)
+                self.runtime_db.event("task_completed" if final_activity == "completed" else "task_failed", {"task_id": task.id, "agent_id": a["id"]}, actor=a["id"])
+                self.agents.set_activity(a["id"], "idle", "core")
+                executed.append({"task_id": task.id, "agent": a["id"], "result": result})
         self.world.project(self)
         self.runtime_db.event("world_tick", {"entities": len(self.world.entities), "relations": len(self.world.relations)}, actor="system")
         result = self.snapshot()
