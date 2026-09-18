@@ -102,7 +102,7 @@ footer strong{color:#aaa;font-weight:500}
 </main>
 <footer><span>GENESIS ENGINE <strong>STATE PROJECTION</strong></span><span id="clock">—</span></footer>
 <script>
-const NS="http://www.w3.org/2000/svg";const $=id=>document.getElementById(id);const svg=$("world");const worldEntities=()=>state?.world?.entities||[];
+const NS="http://www.w3.org/2000/svg";const $=id=>document.getElementById(id);const svg=$("world");const worldEntities=()=>state?.world && state.world.entities || [];
 let state=null, selected=null, networkMode=false, view={x:0,y:0,z:1};
 const palette={memory:"#c8b6ff",core:"#e8ff45",agent:"#79e2ad",capability:"#71a7ff",project:"#ff8a3d",task:"#9a9aff",artifact:"#d9a4ff",connector:"#ff6f9b",skill:"#f5dc62",tool:"#72c9ff",opportunity:"#e8ff45",order:"#ff8a3d",evidence:"#b8b8b0",resource:"#fff"};
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
