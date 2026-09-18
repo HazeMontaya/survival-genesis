@@ -19,6 +19,11 @@ class Order:
 
 class OrderEngine:
     """Provider-neutral commercial lifecycle. External money is never fabricated."""
+    
+    @staticmethod
+    def _order(item):
+        return Order(**item)
+
     def __init__(self,path="workspace/orders.json",evidence=None):
         self.path=Path(path); self.orders=self._load(); self.evidence=evidence
     def _load(self):
