@@ -90,7 +90,7 @@ class GenesisAgent:
         self.messages=MessageBus(root/"messages.json")
         self.runtime_db=RuntimeDatabase(root/"runtime.db")
         self.runtime_policy=PolicyEngine(self.runtime_db,root)
-        self.evolution=EvolutionManager(root/"evolution.json")
+        self.evolution=EvolutionManager(root/"evolution.json",self.evidence)
         self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.runtime_policy)
         self.needs=NeedEngine(self)
         self.treasury=Treasury(self.store)
