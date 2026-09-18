@@ -30,6 +30,13 @@ class Handler(BaseHTTPRequestHandler):
     def body(self):
         n=int(self.headers.get("Content-Length","0")); return json.loads(self.rfile.read(n) or b"{}")
     def do_GET(self):
+        if self.path.startswith("/api/events"):
+            from urllib.parse import urlparse, parse_qs
+            query=parse_qs(urlparse(self.path).query)
+            limit=int(query.get("limit",["200"])[0])
+            kind=query.get("kind",[""])[0]
+            self.send_json({"events":runtime.agent.runtime_db.recent_events(limit,kind)})
+            return
         if self.path=="/api/state":
             s=ecosystem_snapshot(runtime.agent); s.update({"artifacts":runtime.agent.artifacts.snapshot(),"signals":runtime.agent.signals.snapshot(),"commerce":runtime.agent.commerce.snapshot(),"connectors":runtime.agent.connectors.snapshot(),"events":runtime.agent.store.events()[-100:],"runtime":{"running":runtime.running,"tick_interval_seconds":8,"last_tick":runtime.last_result is not None,"last_error":runtime.last_error,"heartbeat":runtime.heartbeat.snapshot()}}); self.send_json(s); return
         if self.path in ("/","/index.html"):

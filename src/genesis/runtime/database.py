@@ -163,6 +163,16 @@ class RuntimeDatabase:
             previous = row["hash"]
         return True
 
+    def recent_events(self, limit: int = 200, kind: str = "") -> list[dict]:
+        """Return factual runtime history for read-only projections and replay."""
+        limit = max(1, min(int(limit), 1000))
+        with self._connect() as db:
+            if kind:
+                rows = db.execute("SELECT id,ts,kind,actor,payload,prev_hash,hash FROM events WHERE kind=? ORDER BY rowid DESC LIMIT ?", (kind, limit)).fetchall()
+            else:
+                rows = db.execute("SELECT id,ts,kind,actor,payload,prev_hash,hash FROM events ORDER BY rowid DESC LIMIT ?", (limit,)).fetchall()
+        return [{**dict(row), "payload": json.loads(row["payload"])} for row in reversed(rows)]
+
     def snapshot(self) -> dict:
         with self._connect() as db:
             events = db.execute("SELECT COUNT(*) n FROM events").fetchone()["n"]

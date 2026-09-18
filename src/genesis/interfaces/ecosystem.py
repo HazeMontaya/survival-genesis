@@ -1,23 +1,30 @@
 from datetime import datetime, timezone
 
 def ecosystem_snapshot(agent):
-    ledger=agent.store.load()
-    tasks=agent.tasks.snapshot()
-    agents=agent.agents.snapshot()
-    active={t["agent"]:t for t in tasks if t["status"]=="active"}
+    state = agent.snapshot()
+    world = state["world"]
     return {
-        "company":agent.company.snapshot(),
-        "agents":[{
-            **a,
-            "status":"arbeitet" if a["id"] in active else a["state"],
-            "task":active[a["id"]]["title"] if a["id"] in active else "keine aktive Aufgabe"
-        } for a in agents],
-        "rooms":[],
-        "tasks":tasks,
-        "memory":agent.memory.snapshot(),
-        "clock":datetime.now(timezone.utc).isoformat(),
-        "ledger":ledger.__dict__,
-        "capabilities":agent.capabilities.snapshot(),
-        "projects":agent.projects.snapshot(),
-        "world":agent.world.snapshot(agent),
+        "schema": "agent-world/1",
+        "clock": datetime.now(timezone.utc).isoformat(),
+        "mission": state["company"]["mission"],
+        "survival": {
+            "mode": state["mode"],
+            "cash_eur": state["ledger"]["cash_eur"],
+            "reserved_eur": state["ledger"]["reserved_eur"],
+            "compute_cost_eur": state["ledger"]["compute_cost_eur"],
+        },
+        "world": world,
+        "agents": state["agents"],
+        "tasks": state["tasks"],
+        "projects": state["projects"],
+        "capabilities": state["capabilities"],
+        "memory": state["memory"],
+        "evidence": state["evidence"],
+        "commerce": state["commerce"],
+        "orders": state["orders"],
+        "treasury": state["treasury"],
+        "resources": state["resources"],
+        "runtime": state["runtime"],
+        "events": agent.runtime_db.recent_events(120),
+        "top_opportunities": state["top_opportunities"],
     }

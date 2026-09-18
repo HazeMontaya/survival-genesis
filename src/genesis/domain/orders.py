@@ -19,8 +19,8 @@ class Order:
 
 class OrderEngine:
     """Provider-neutral commercial lifecycle. External money is never fabricated."""
-    def __init__(self,path="workspace/orders.json"):
-        self.path=Path(path); self.orders=self._load()
+    def __init__(self,path="workspace/orders.json",evidence=None):
+        self.path=Path(path); self.orders=self._load(); self.evidence=evidence
     def _load(self):
         if not self.path.exists(): return []
         try:return json.loads(self.path.read_text(encoding="utf-8"))
@@ -40,5 +40,8 @@ class OrderEngine:
         allowed={"lead":{"quoted","cancelled"},"quoted":{"accepted","cancelled"},"accepted":{"paid","cancelled"},"paid":{"fulfilling","refunded"},"fulfilling":{"delivered","cancelled"},"delivered":{"completed","refunded"},"completed":set(),"cancelled":set(),"refunded":set()}
         if target not in allowed[current]: raise ValueError(f"invalid transition {current}->{target}")
         if not evidence_id: raise ValueError("state transitions require evidence")
+        if self.evidence:
+            try: self.evidence.require_verified(evidence_id)
+            except (KeyError,ValueError) as exc: raise ValueError("state transition requires verified evidence") from exc
         item["status"]=target; item["evidence_id"]=str(evidence_id); item["updated_at"]=datetime.now(timezone.utc).isoformat(); self._save(); return item
     def snapshot(self): return self.orders[-500:]

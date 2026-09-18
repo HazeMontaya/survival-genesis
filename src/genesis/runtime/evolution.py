@@ -16,8 +16,8 @@ class EvolutionProposal:
 
 class EvolutionManager:
     """Self-improvement registry. Proposal != deployment; deployment requires tests and evidence."""
-    def __init__(self,path="workspace/evolution.json"):
-        self.path=Path(path); self.items=self._load()
+    def __init__(self,path="workspace/evolution.json",evidence=None):
+        self.path=Path(path); self.items=self._load(); self.evidence=evidence
     def _load(self):
         if not self.path.exists(): return []
         try:return json.loads(self.path.read_text(encoding="utf-8"))
@@ -33,8 +33,16 @@ class EvolutionManager:
         item=next((x for x in self.items if x["id"]==proposal_id),None)
         if not item: raise KeyError(proposal_id)
         if not evidence_id: raise ValueError("evidence required")
+        if self.evidence:
+            try: self.evidence.require_verified(evidence_id)
+            except (KeyError,ValueError) as exc: raise ValueError("evolution verification requires verified evidence") from exc
         item["status"]="verified"; item["evidence_id"]=str(evidence_id); self._save(); return item
-    def mark_deployed(self,proposal_id):
+    def mark_deployed(self,proposal_id, deployment_evidence_id=""):
+        if self.evidence:
+            if not deployment_evidence_id:
+                raise ValueError("deployment requires evidence")
+            try: self.evidence.require_verified(deployment_evidence_id)
+            except (KeyError,ValueError) as exc: raise ValueError("deployment requires verified evidence") from exc
         item=next((x for x in self.items if x["id"]==proposal_id),None)
         if not item or item["status"]!="verified": raise ValueError("proposal must be verified before deployment")
         item["status"]="deployed"; self._save(); return item

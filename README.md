@@ -43,6 +43,10 @@ From Command Prompt:
 
 Open http://127.0.0.1:8765.
 
+## Product experience
+
+The web client is a complete world-first operating environment, not a conventional dashboard. It renders the persisted world graph, survival pressure, work graph and economic evidence directly from runtime state. The design system is documented in `docs/DESIGN_SYSTEM.md`.
+
 ## Runtime model
 
 The world starts with one Genesis agent and only the runtime substrate. Missing capabilities are derived from persisted state. Work is dependency-aware; capabilities are activated only after execution and evidence. The SVG is a projection of actual runtime entities, not a prebuilt simulation.

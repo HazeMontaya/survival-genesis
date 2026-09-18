@@ -12,5 +12,5 @@ def test_unverified_revenue_is_rejected(tmp_path):
     except ValueError: pass
     else: raise AssertionError("unverified revenue must be rejected")
 def test_verified_revenue_increases_cash(tmp_path):
-    store=StateStore(str(tmp_path/"state.json")); evidence=EvidenceLedger(tmp_path/"evidence.json"); economy=Economy(store,evidence); ev=evidence.record("test","payment","verified test payment",{"amount":10},"test"); ledger=economy.record_revenue(RevenueEvent("test",10,verified=True,evidence_id=ev.id)); assert ledger.cash_eur==10
+    store=StateStore(str(tmp_path/"state.json")); evidence=EvidenceLedger(tmp_path/"evidence.json"); economy=Economy(store,evidence); ev=evidence.record("test","payment","payment observed",{"amount":10},"test"); evidence.verify(ev.id,"test-verifier"); ledger=economy.record_revenue(RevenueEvent("test",10,verified=True,evidence_id=ev.id)); assert ledger.cash_eur==10
 def test_trading_is_off_by_default(): assert SurvivalPolicy().may_trade() is False

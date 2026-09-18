@@ -14,7 +14,8 @@ def test_evidence_is_required_for_revenue(tmp_path):
         assert False
     except ValueError:
         pass
-    ev=evidence.record("order-1","payment","verified payment",{"provider_event_id":"evt-1"},"provider")
+    ev=evidence.record("order-1","payment","payment observed",{"provider_event_id":"evt-1"},"provider")
+    evidence.verify(ev.id,"provider-verifier")
     ledger=economy.record_revenue(RevenueEvent("test",10,True,ev.id))
     assert ledger.cash_eur==10
 
