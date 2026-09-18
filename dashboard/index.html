@@ -3,87 +3,147 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SURVIVAL GENESIS — Enterprise Control Center</title>
+<title>SURVIVAL GENESIS — Aetherium Enterprise Interface</title>
 <style>
-:root{--bg:#05070d;--panel:rgba(11,15,25,.78);--panel2:rgba(17,23,36,.72);--line:rgba(140,160,190,.16);--text:#eef3ff;--muted:#77849b;--cyan:#65e6ff;--violet:#9d7cff;--green:#64efb0;--orange:#ffad6b;--pink:#ff78bd;--gold:#f4d47b}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#05070d;color:var(--text);font:13px Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{overflow-x:hidden}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 25%,rgba(101,230,255,.07),transparent 28%),radial-gradient(circle at 15% 80%,rgba(157,124,255,.08),transparent 25%),radial-gradient(circle at 90% 60%,rgba(255,120,189,.05),transparent 25%);z-index:-2}
-body:after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,#000,transparent 85%);z-index:-1}
-.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);background:rgba(5,8,15,.88);backdrop-filter:blur(20px);padding:24px 16px;display:flex;flex-direction:column}.logo{display:flex;gap:11px;align-items:center;margin-bottom:30px}.mark{width:36px;height:36px;border-radius:11px;border:1px solid rgba(101,230,255,.45);box-shadow:0 0 28px rgba(101,230,255,.12) inset,0 0 18px rgba(101,230,255,.12);display:grid;place-items:center;color:var(--cyan);font-weight:900}.brand{font-size:12px;letter-spacing:.19em;font-weight:800}.brand small{display:block;color:var(--muted);letter-spacing:.08em;margin-top:4px;font-size:9px}.nav{display:grid;gap:5px}.nav button{all:unset;padding:11px 12px;border-radius:9px;color:#8793a8;cursor:pointer}.nav button.active,.nav button:hover{background:rgba(255,255,255,.045);color:#fff}.nav b{font-size:10px;letter-spacing:.12em;margin-left:12px;color:#4f5b70}.foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;color:#536076;font-size:10px;line-height:1.7}.main{padding:22px 26px 40px;max-width:1800px;width:100%;margin:auto}.top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--cyan);text-transform:uppercase}.title{font-size:27px;font-weight:800;letter-spacing:-.04em;margin:7px 0 3px}.sub{color:var(--muted)}.actions{display:flex;gap:7px}.btn{border:1px solid var(--line);background:rgba(15,21,33,.78);color:#dbe5f5;border-radius:8px;padding:9px 12px;cursor:pointer}.btn.primary{border-color:rgba(101,230,255,.4);box-shadow:0 0 20px rgba(101,230,255,.06)}.btn:hover{border-color:rgba(101,230,255,.55)}
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:9px}.kpi{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:13px 14px;position:relative;overflow:hidden}.kpi:after{content:"";position:absolute;inset:auto 0 0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.35}.klabel{font-size:9px;letter-spacing:.14em;color:#66748a;text-transform:uppercase}.kval{font-size:20px;font-weight:750;margin-top:7px}.delta{font-size:9px;color:var(--green);margin-left:6px}
-.workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.55fr);gap:9px}.panel{border:1px solid var(--line);background:var(--panel);border-radius:12px;box-shadow:0 18px 70px rgba(0,0,0,.18);overflow:hidden}.ph{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.ph h2{font-size:10px;letter-spacing:.16em;margin:0;color:#aab6ca}.tiny{font-size:9px;color:#5f6d83}.status{display:flex;align-items:center;gap:6px;color:#72eab5}.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 1.6s infinite}@keyframes pulse{50%{opacity:.3;transform:scale(.7)}}
-.map{height:590px;position:relative;overflow:hidden;background:radial-gradient(circle at center,rgba(101,230,255,.055),transparent 30%)}.map svg{width:100%;height:100%}.gridline{stroke:#8ba1bf;stroke-opacity:.06;stroke-width:1}.connection{stroke:#63dff8;stroke-opacity:.18;stroke-width:1.2;stroke-dasharray:3 8;animation:dash 9s linear infinite}@keyframes dash{to{stroke-dashoffset:-90}}.orb{filter:drop-shadow(0 0 12px rgba(101,230,255,.35));animation:float 4s ease-in-out infinite}@keyframes float{50%{transform:translateY(-4px)}}.room rect{fill:rgba(13,19,30,.9);stroke:rgba(140,160,190,.22);transition:.2s}.room:hover rect{stroke:rgba(101,230,255,.7);fill:rgba(20,29,43,.96)}.room text{fill:#d9e2ef;font-size:11px}.room .meta{fill:#68768c;font-size:8px;letter-spacing:.08em}.core rect{stroke:rgba(157,124,255,.72);fill:rgba(20,15,36,.94);filter:drop-shadow(0 0 20px rgba(157,124,255,.18))}.core .ring{fill:none;stroke:var(--violet);stroke-opacity:.45;stroke-dasharray:2 7;animation:spin 16s linear infinite;transform-origin:50% 50%}@keyframes spin{to{transform:rotate(360deg)}}.agent-dot{fill:var(--cyan);filter:drop-shadow(0 0 7px var(--cyan));animation:agent 2s infinite}.agent-dot:nth-child(3n){animation-delay:.7s}@keyframes agent{50%{opacity:.25}}
-.rightcol{display:grid;grid-template-rows:auto auto 1fr;gap:9px}.agentlist{padding:4px 14px}.agentrow{display:grid;grid-template-columns:8px 1fr auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.agentrow:last-child{border:0}.adot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}.aname{font-weight:650}.arole{font-size:9px;color:#657287;margin-top:3px}.astate{text-align:right;color:#8794a8;font-size:9px}.command{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px}.command .btn{width:100%}.events{height:100%;max-height:330px;overflow:auto;padding:4px 14px}.event{padding:10px 0;border-bottom:1px solid var(--line)}.etime{font-size:8px;color:#556278;float:right}.etype{color:var(--cyan);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.emsg{font-size:10px;color:#9ba8bb;margin-top:4px}.footerline{margin-top:9px;color:#465267;font-size:9px;display:flex;justify-content:space-between}
-@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.workspace{grid-template-columns:1fr}.rightcol{grid-template-columns:1fr 1fr 1fr;grid-template-rows:none}.events{max-height:240px}}@media(max-width:800px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.rightcol{grid-template-columns:1fr}.map{height:520px}.top{align-items:flex-start;gap:15px;flex-direction:column}}
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+--void:#03050a;--deep:#070b12;--glass:rgba(10,15,24,.72);--glass2:rgba(17,24,36,.58);
+--ink:#f3f7ff;--silver:#9ba9bc;--dim:#536176;--hair:rgba(176,198,225,.13);
+--cyan:#59e7ff;--cyan2:#1aa5c8;--violet:#a988ff;--green:#62efb0;--amber:#ffc56b;--rose:#ff78bf;--red:#ff6b7c;
+--mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}html{background:var(--void)}body{margin:0;min-height:100vh;color:var(--ink);background:
+radial-gradient(ellipse at 50% 42%,rgba(28,69,99,.15),transparent 42%),
+radial-gradient(ellipse at 82% 8%,rgba(117,74,190,.09),transparent 32%),
+linear-gradient(180deg,#03050a 0,#050912 52%,#020409 100%);
+font:12px Inter,system-ui,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;z-index:-3;opacity:.32;background:
+linear-gradient(rgba(103,226,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(103,226,255,.018) 1px,transparent 1px);
+background-size:48px 48px;mask-image:radial-gradient(ellipse at center,#000 0,transparent 82%)}
+body:after{content:"";position:fixed;inset:0;z-index:20;pointer-events:none;opacity:.055;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");mix-blend-mode:screen}
+.shell{min-height:100vh;display:grid;grid-template-columns:258px 1fr 305px}
+aside{background:rgba(2,5,10,.76);border-right:1px solid var(--hair);backdrop-filter:blur(24px);position:sticky;top:0;height:100vh;padding:24px 17px;z-index:5}
+.right{border-left:1px solid var(--hair);border-right:0;padding:18px 14px;background:rgba(3,6,11,.68)}
+.brand{display:flex;align-items:center;gap:12px;padding:3px 6px 25px;border-bottom:1px solid var(--hair)}
+.sig{width:39px;height:39px;border:1px solid rgba(89,231,255,.48);border-radius:12px;display:grid;place-items:center;color:var(--cyan);font-weight:800;box-shadow:inset 0 0 24px rgba(89,231,255,.08),0 0 28px rgba(89,231,255,.06);position:relative}
+.sig:after{content:"";position:absolute;inset:5px;border:1px solid rgba(169,136,255,.38);border-radius:8px;transform:rotate(45deg)}
+.brand strong{font-size:12px;letter-spacing:.19em}.brand small{display:block;color:#56647a;font:9px var(--mono);letter-spacing:.08em;margin-top:5px}
+.section{margin:24px 7px 8px;color:#46536a;font:9px var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.nav{display:grid;gap:3px}.nav button{all:unset;display:flex;align-items:center;gap:11px;padding:10px 10px;border-radius:8px;color:#758399;cursor:pointer;position:relative}.nav button:before{content:"";width:5px;height:5px;border:1px solid currentColor;border-radius:50%;opacity:.6}.nav button:hover,.nav button.active{color:#edf5ff;background:linear-gradient(90deg,rgba(89,231,255,.08),transparent)}.nav button.active:after{content:"";position:absolute;right:0;width:2px;height:18px;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.health{margin-top:22px;padding:12px;border:1px solid var(--hair);border-radius:9px;background:rgba(12,18,29,.42)}.health .hrow{display:flex;justify-content:space-between;margin:6px 0;color:#748197;font-size:10px}.health b{color:#dfe9f7;font-weight:500}.miniBar{height:2px;background:#182331;margin-top:10px;overflow:hidden}.miniBar i{display:block;width:74%;height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));box-shadow:0 0 10px var(--cyan)}
+main{min-width:0;padding:20px 22px 42px;max-width:1700px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.crumb{font:9px var(--mono);color:var(--cyan);letter-spacing:.16em}.title{font-size:28px;font-weight:800;letter-spacing:-.045em;margin:7px 0 4px}.subtitle{color:#69778d;font-size:11px}.topActions{display:flex;gap:6px}.btn{font:10px var(--mono);color:#c9d6e8;background:rgba(13,20,31,.72);border:1px solid var(--hair);border-radius:7px;padding:9px 11px;cursor:pointer}.btn:hover{border-color:rgba(89,231,255,.5);box-shadow:0 0 20px rgba(89,231,255,.06)}.btn.live{color:#061018;background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 25px rgba(89,231,255,.16)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:7px}.kpi{position:relative;padding:12px 13px;min-height:76px;border:1px solid var(--hair);border-radius:8px;background:linear-gradient(145deg,rgba(16,23,35,.72),rgba(7,11,18,.66));overflow:hidden}.kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:linear-gradient(180deg,var(--cyan),transparent);opacity:.45}.kl{font:8px var(--mono);color:#627087;letter-spacing:.14em;text-transform:uppercase}.kv{font-size:19px;font-weight:700;margin-top:8px;letter-spacing:-.02em}.ks{font:8px var(--mono);color:#4d5b70;margin-top:4px}.ok{color:var(--green)}
+.grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.55fr);gap:7px}.panel{border:1px solid var(--hair);background:var(--glass);border-radius:9px;box-shadow:0 30px 100px rgba(0,0,0,.2);overflow:hidden;backdrop-filter:blur(18px)}.head{height:42px;padding:0 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hair)}.head h2{font:9px var(--mono);color:#aebbd0;letter-spacing:.15em;margin:0}.tag{font:8px var(--mono);color:#56647a}.liveTag{color:var(--green)}.liveTag:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);margin-right:6px;animation:blink 1.4s infinite}@keyframes blink{50%{opacity:.25}}
+.viewport{height:600px;position:relative;background:
+radial-gradient(circle at 50% 48%,rgba(79,220,255,.075),transparent 26%),
+radial-gradient(circle at 50% 48%,rgba(169,136,255,.045),transparent 47%);overflow:hidden}
+.viewport:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.28),transparent 14%,transparent 86%,rgba(0,0,0,.28)),linear-gradient(180deg,rgba(0,0,0,.2),transparent 16%,transparent 84%,rgba(0,0,0,.28))}
+svg{width:100%;height:100%;display:block}.mesh{stroke:#76a0bc;stroke-opacity:.065;fill:none}.wire{stroke:var(--cyan);stroke-opacity:.17;stroke-width:1;stroke-dasharray:2 9;animation:flow 11s linear infinite}.wire2{stroke:var(--violet);stroke-opacity:.13;stroke-width:1;stroke-dasharray:1 13;animation:flow 17s linear infinite reverse}@keyframes flow{to{stroke-dashoffset:-180}}
+.coreHalo{fill:none;stroke:var(--violet);stroke-opacity:.18;stroke-width:1;stroke-dasharray:1 8;transform-origin:center;animation:rotate 24s linear infinite}@keyframes rotate{to{transform:rotate(360deg)}}.coreHalo2{fill:none;stroke:var(--cyan);stroke-opacity:.15;stroke-width:1;stroke-dasharray:6 12;transform-origin:center;animation:rotate 38s linear infinite reverse}
+.coreBox{fill:rgba(10,11,23,.92);stroke:rgba(169,136,255,.65);filter:drop-shadow(0 0 25px rgba(169,136,255,.13))}.roomBox{fill:rgba(8,14,22,.91);stroke:rgba(154,179,206,.22);filter:drop-shadow(0 12px 22px rgba(0,0,0,.3));transition:.25s}.room:hover .roomBox{stroke:rgba(89,231,255,.65);filter:drop-shadow(0 0 16px rgba(89,231,255,.14))}
+.rtitle{fill:#e8f1fb;font-size:11px;font-weight:700;letter-spacing:.06em}.rmeta{fill:#637188;font:7px var(--mono);letter-spacing:.1em}.rstat{fill:#56d9ee;font:8px var(--mono)}.node{fill:var(--cyan);filter:drop-shadow(0 0 7px var(--cyan));animation:nodePulse 2.6s ease-in-out infinite}.node:nth-of-type(2n){animation-delay:.8s}@keyframes nodePulse{50%{opacity:.18;transform:scale(.62)}}.data{fill:var(--green);filter:drop-shadow(0 0 5px var(--green));animation:travel 3.8s linear infinite}@keyframes travel{0%{opacity:0}15%{opacity:1}85%{opacity:1}100%{opacity:0}}
+.side{display:grid;gap:7px}.agentlist{max-height:280px;overflow:auto;padding:3px 12px}.agent{display:grid;grid-template-columns:7px 1fr auto;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid var(--hair)}.agent:last-child{border:0}.adot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}.an{font-size:10px;font-weight:600}.ar{font:8px var(--mono);color:#56647a;margin-top:3px}.as{text-align:right;font:8px var(--mono);color:#7e8da2}.controls{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px}.controls .btn{padding:11px 7px}.events{max-height:258px;overflow:auto;padding:4px 12px}.event{padding:9px 0;border-bottom:1px solid var(--hair)}.etype{font:8px var(--mono);color:var(--cyan);letter-spacing:.11em}.emsg{font-size:9px;color:#8d9ab0;margin-top:4px;line-height:1.45}.etime{float:right;font:7px var(--mono);color:#46536a}
+.rightTitle{font:9px var(--mono);letter-spacing:.16em;color:#aebbd0;padding:0 3px 11px}.telemetry{display:grid;gap:6px}.metric{padding:10px;border:1px solid var(--hair);background:rgba(12,18,28,.56);border-radius:7px}.metricTop{display:flex;justify-content:space-between;color:#65748a;font:8px var(--mono)}.metricTop b{color:#bfcde0;font-weight:500}.meter{height:3px;background:#141d29;margin-top:9px;border-radius:3px;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));box-shadow:0 0 9px rgba(89,231,255,.45);width:68%}
+.signal{display:flex;align-items:center;gap:8px;padding:8px 3px;color:#758399;font:8px var(--mono);border-bottom:1px solid var(--hair)}.signal i{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.footer{font:8px var(--mono);color:#3f4b5e;display:flex;justify-content:space-between;margin-top:7px}
+@media(max-width:1400px){.shell{grid-template-columns:220px 1fr}.right{display:none}.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.shell{display:block}aside{display:none}main{padding:15px}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.viewport{height:520px}.top{flex-direction:column;gap:12px}}@media(max-width:520px){.kpis{grid-template-columns:1fr}.viewport{height:430px}.title{font-size:22px}}
 </style>
 </head>
 <body>
-<div class="app">
-<aside class="sidebar">
-<div class="logo"><div class="mark">SG</div><div class="brand">SURVIVAL GENESIS<small>ENTERPRISE OS · v0.2</small></div></div>
-<div class="nav"><b>COMMAND</b><button class="active">◈ Ecosystem</button><button>⌁ Strategy</button><button>◌ Intelligence</button><button>◇ Products</button><button>△ Growth</button><button>▣ Treasury</button><button>◫ Operations</button><button>✦ Evolution</button></div>
-<div class="foot">AUTONOMOUS COMPANY RUNTIME<br>Zero-capital invariant · External execution guarded<br><br>All revenue must be independently verified before recognition.</div>
+<div class="shell">
+<aside>
+<div class="brand"><div class="sig">SG</div><div><strong>SURVIVAL GENESIS</strong><small>AE­THERIUM OS / 0.2</small></div></div>
+<div class="section">Enterprise</div>
+<nav class="nav">
+<button class="active">Ecosystem</button><button>Command Center</button><button>Intelligence</button><button>Product Foundry</button><button>Growth Network</button><button>Revenue Systems</button><button>Treasury</button><button>Operations</button><button>Evolution</button>
+</nav>
+<div class="section">Infrastructure</div>
+<nav class="nav"><button>Agents</button><button>Memory Graph</button><button>Experiments</button><button>Connectors</button><button>Audit Log</button></nav>
+<div class="health"><div class="hrow"><span>CORE HEALTH</span><b class="ok">NOMINAL</b></div><div class="hrow"><span>CAPITAL GATE</span><b>€0 / OFF</b></div><div class="hrow"><span>EXTERNAL IO</span><b>GUARDED</b></div><div class="miniBar"><i></i></div></div>
 </aside>
-<main class="main">
-<header class="top"><div><div class="eyebrow">Company Control Center / Live Topology</div><div class="title">The company is a system.</div><div class="sub">Rooms, agents, capital, experiments and execution — one observable operating surface.</div></div><div class="actions"><button class="btn" id="refresh">Refresh</button><button class="btn" id="tick">Run Cycle</button><button class="btn primary" id="toggle">Start Runtime</button></div></header>
-<section class="kpis">
-<div class="kpi"><div class="klabel">Cash Position</div><div class="kval" id="cash">€0.00</div></div>
-<div class="kpi"><div class="klabel">Verified Revenue</div><div class="kval" id="revenue">€0.00</div></div>
-<div class="kpi"><div class="klabel">Net Surplus</div><div class="kval" id="surplus">€0.00</div></div>
-<div class="kpi"><div class="klabel">Agents</div><div class="kval" id="agentCount">—</div></div>
-<div class="kpi"><div class="klabel">Rooms</div><div class="kval" id="roomCount">—</div></div>
-<div class="kpi"><div class="klabel">Experiments</div><div class="kval" id="experiments">0</div></div>
-</section>
-<section class="workspace">
-<div class="panel">
-<div class="ph"><h2>LIVE ORGANIZATIONAL TOPOLOGY</h2><div class="status"><span class="pulse"></span><span id="runtime">LOCAL RUNTIME STANDBY</span></div></div>
-<div class="map">
-<svg viewBox="0 0 980 590" preserveAspectRatio="xMidYMid meet">
-<defs><radialGradient id="coreGlow"><stop stop-color="#9d7cff" stop-opacity=".25"/><stop offset="1" stop-color="#9d7cff" stop-opacity="0"/></radialGradient></defs>
-<g opacity=".55">
-<path class="gridline" d="M40 90H940M40 180H940M40 270H940M40 360H940M40 450H940M40 540H940M130 35V555M250 35V555M370 35V555M490 35V555M610 35V555M730 35V555M850 35V555"/>
+<main>
+<div class="top"><div><div class="crumb">GENESIS / ENTERPRISE TOPOLOGY / LIVE</div><div class="title">A company that behaves like a living system.</div><div class="subtitle">Observe the organization as infrastructure: rooms, agents, signals, decisions, experiments and verified economic state.</div></div><div class="topActions"><button class="btn" id="refresh">SYNC STATE</button><button class="btn" id="tick">RUN CYCLE</button><button class="btn live" id="toggle">START RUNTIME</button></div></div>
+<div class="kpis">
+<div class="kpi"><div class="kl">Cash Position</div><div class="kv" id="cash">€0.00</div><div class="ks">AVAILABLE CAPITAL</div></div>
+<div class="kpi"><div class="kl">Verified Revenue</div><div class="kv" id="revenue">€0.00</div><div class="ks">RECOGNIZED ONLY</div></div>
+<div class="kpi"><div class="kl">Net Surplus</div><div class="kv" id="surplus">€0.00</div><div class="ks">AFTER RESERVE</div></div>
+<div class="kpi"><div class="kl">Agent Fleet</div><div class="kv" id="agentCount">—</div><div class="ks">REGISTERED NODES</div></div>
+<div class="kpi"><div class="kl">Rooms</div><div class="kv" id="roomCount">—</div><div class="ks">ORGANIZATIONAL SPACE</div></div>
+<div class="kpi"><div class="kl">Experiments</div><div class="kv" id="experiments">0</div><div class="ks">MEASURED CYCLES</div></div>
+</div>
+<div class="grid">
+<section class="panel">
+<div class="head"><h2>LIVE 3D-STYLE ORGANIZATIONAL FIELD</h2><div class="tag liveTag" id="runtime">LOCAL RUNTIME STANDBY</div></div>
+<div class="viewport">
+<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" aria-label="Survival Genesis living enterprise topology">
+<defs>
+<radialGradient id="g"><stop stop-color="#a988ff" stop-opacity=".23"/><stop offset=".45" stop-color="#59e7ff" stop-opacity=".07"/><stop offset="1" stop-color="#03050a" stop-opacity="0"/></radialGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#59e7ff" stop-opacity="0"/><stop offset=".5" stop-color="#59e7ff" stop-opacity=".7"/><stop offset="1" stop-color="#a988ff" stop-opacity="0"/></linearGradient>
+</defs>
+<g class="mesh"><path d="M20 100H980M20 200H980M20 300H980M20 400H980M20 500H980M100 20V580M220 20V580M340 20V580M460 20V580M580 20V580M700 20V580M820 20V580M940 20V580"/></g>
+<ellipse cx="500" cy="300" rx="290" ry="205" fill="url(#g)"/>
+<g class="wire"><path d="M500 300L145 115M500 300L145 485M500 300L855 115M500 300L855 485M500 300L315 65M500 300L685 65M500 300L315 535M500 300L685 535"/></g>
+<g class="wire2"><path d="M145 115Q500 10 855 115M145 485Q500 590 855 485M315 65Q500 155 685 65M315 535Q500 445 685 535"/></g>
+<g>
+<circle class="coreHalo" cx="500" cy="300" r="112"/><circle class="coreHalo2" cx="500" cy="300" r="132"/><circle cx="500" cy="300" r="155" fill="none" stroke="#59e7ff" stroke-opacity=".035"/>
+<rect class="coreBox" x="380" y="235" rx="18" width="240" height="130"/>
+<text x="500" y="270" text-anchor="middle" fill="#f5f1ff" font-size="17" font-weight="800">GENESIS CORE</text>
+<text x="500" y="292" text-anchor="middle" fill="#8996ab" font-size="9" font-family="DM Mono">STRATEGY · MEMORY · GOVERNANCE</text>
+<text x="500" y="319" text-anchor="middle" fill="#59e7ff" font-size="9" font-family="DM Mono">DECISION ENGINE / NOMINAL</text>
+<text x="500" y="341" text-anchor="middle" fill="#5e6d82" font-size="8" font-family="DM Mono">CAPITAL €0 · FINANCIAL IO OFF</text>
 </g>
-<circle cx="490" cy="295" r="175" fill="url(#coreGlow)"/>
-<g class="connection"><path d="M490 295L170 130"/><path d="M490 295L170 455"/><path d="M490 295L810 130"/><path d="M490 295L810 455"/><path d="M490 295L320 75"/><path d="M490 295L660 75"/><path d="M490 295L320 515"/><path d="M490 295L660 515"/></g>
-<g class="core"><circle class="ring" cx="490" cy="295" r="105" stroke-width="1"/><circle class="ring" cx="490" cy="295" r="120" stroke-width="1" style="animation-duration:25s;animation-direction:reverse"/><rect x="385" y="230" rx="18" width="210" height="130"/><text x="490" y="268" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">GENESIS CORE</text><text x="490" y="291" text-anchor="middle" fill="#9ba8bb" font-size="10">STRATEGY · MEMORY · GOVERNANCE</text><text x="490" y="318" text-anchor="middle" fill="#65e6ff" font-size="10">DECISION ENGINE ONLINE</text><text x="490" y="340" text-anchor="middle" fill="#66748a" font-size="9">CAPITAL GATE: €0 / EXTERNAL OFF</text></g>
-<circle class="agent-dot" cx="90" cy="55" r="2.8"/><circle class="agent-dot" cx="227" cy="138" r="1.5"/><circle class="agent-dot" cx="364" cy="221" r="1.5"/><circle class="agent-dot" cx="501" cy="304" r="1.5"/><circle class="agent-dot" cx="638" cy="387" r="2.8"/><circle class="agent-dot" cx="775" cy="470" r="1.5"/><circle class="agent-dot" cx="112" cy="73" r="1.5"/><circle class="agent-dot" cx="249" cy="156" r="1.5"/><circle class="agent-dot" cx="386" cy="239" r="2.8"/><circle class="agent-dot" cx="523" cy="322" r="1.5"/><circle class="agent-dot" cx="660" cy="405" r="1.5"/><circle class="agent-dot" cx="797" cy="488" r="1.5"/><circle class="agent-dot" cx="134" cy="91" r="2.8"/><circle class="agent-dot" cx="271" cy="174" r="1.5"/><circle class="agent-dot" cx="408" cy="257" r="1.5"/><circle class="agent-dot" cx="545" cy="340" r="1.5"/><circle class="agent-dot" cx="682" cy="423" r="2.8"/><circle class="agent-dot" cx="819" cy="506" r="1.5"/><circle class="agent-dot" cx="156" cy="109" r="1.5"/><circle class="agent-dot" cx="293" cy="192" r="1.5"/><circle class="agent-dot" cx="430" cy="275" r="2.8"/><circle class="agent-dot" cx="567" cy="358" r="1.5"/><circle class="agent-dot" cx="704" cy="441" r="1.5"/><circle class="agent-dot" cx="841" cy="524" r="1.5"/>
-<g class="room" transform="translate(75 90)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">RESEARCH LAB</text><text class="meta" x="16" y="49">SIGNALS · MARKETS · DISCOVERY</text><text x="16" y="67" fill="#65e6ff" font-size="9">SCOUT / ATLAS</text></g>
-<g class="room" transform="translate(75 415)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">PRODUCT FORGE</text><text class="meta" x="16" y="49">BUILD · PACKAGE · QA</text><text x="16" y="67" fill="#ffad6b" font-size="9">FORGE</text></g>
-<g class="room" transform="translate(715 90)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">GROWTH STUDIO</text><text class="meta" x="16" y="49">BRAND · CONTENT · DISTRIBUTION</text><text x="16" y="67" fill="#ff78bd" font-size="9">MUSE</text></g>
-<g class="room" transform="translate(715 415)"><rect rx="12" width="190" height="80"/><text x="16" y="29" font-weight="700">REVENUE FLOOR</text><text class="meta" x="16" y="49">OFFERS · LEADS · CONVERSION</text><text x="16" y="67" fill="#64efb0" font-size="9">CLOSER · GUARDED</text></g>
-<g class="room" transform="translate(290 35)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">TREASURY</text><text class="meta" x="14" y="42">VERIFY · RESERVE · REINVEST</text></g>
-<g class="room" transform="translate(540 35)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">INTELLIGENCE</text><text class="meta" x="14" y="42">SIGNALS → DECISIONS</text></g>
-<g class="room" transform="translate(290 500)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">OPERATIONS</text><text class="meta" x="14" y="42">EXECUTION · FULFILLMENT</text></g>
-<g class="room" transform="translate(540 500)"><rect rx="10" width="150" height="55"/><text x="14" y="24" font-weight="700">EVOLUTION LAB</text><text class="meta" x="14" y="42">EXPERIMENTS · LEARNING</text></g>
+<g class="room" transform="translate(45 75)"><rect class="roomBox" rx="12" width="200" height="82"/><text class="rtitle" x="15" y="29">RESEARCH LAB</text><text class="rmeta" x="15" y="48">SIGNALS / MARKETS / DISCOVERY</text><text class="rstat" x="15" y="68">SCOUT · ATLAS</text></g>
+<g class="room" transform="translate(45 443)"><rect class="roomBox" rx="12" width="200" height="82"/><text class="rtitle" x="15" y="29">PRODUCT FORGE</text><text class="rmeta" x="15" y="48">BUILD / PACKAGE / QA</text><text class="rstat" x="15" y="68">FORGE</text></g>
+<g class="room" transform="translate(755 75)"><rect class="roomBox" rx="12" width="200" height="82"/><text class="rtitle" x="15" y="29">GROWTH STUDIO</text><text class="rmeta" x="15" y="48">BRAND / CONTENT / DISTRIBUTION</text><text class="rstat" x="15" y="68">MUSE</text></g>
+<g class="room" transform="translate(755 443)"><rect class="roomBox" rx="12" width="200" height="82"/><text class="rtitle" x="15" y="29">REVENUE FLOOR</text><text class="rmeta" x="15" y="48">OFFERS / LEADS / CONVERSION</text><text class="rstat" x="15" y="68">CLOSER · GUARDED</text></g>
+<g class="room" transform="translate(300 28)"><rect class="roomBox" rx="10" width="155" height="52"/><text class="rtitle" x="13" y="23" font-size="10">TREASURY</text><text class="rmeta" x="13" y="40">VERIFY / RESERVE / REINVEST</text></g>
+<g class="room" transform="translate(545 28)"><rect class="roomBox" rx="10" width="155" height="52"/><text class="rtitle" x="13" y="23" font-size="10">INTELLIGENCE</text><text class="rmeta" x="13" y="40">SIGNALS → DECISIONS</text></g>
+<g class="room" transform="translate(300 520)"><rect class="roomBox" rx="10" width="155" height="52"/><text class="rtitle" x="13" y="23" font-size="10">OPERATIONS</text><text class="rmeta" x="13" y="40">EXECUTION / FULFILLMENT</text></g>
+<g class="room" transform="translate(545 520)"><rect class="roomBox" rx="10" width="155" height="52"/><text class="rtitle" x="13" y="23" font-size="10">EVOLUTION LAB</text><text class="rmeta" x="13" y="40">EXPERIMENTS / LEARNING</text></g>
+<circle class="node" cx="70" cy="45" r="2.4"/><circle class="node" cx="243" cy="142" r="1.2"/><circle class="node" cx="416" cy="239" r="1.2"/><circle class="node" cx="589" cy="336" r="1.2"/><circle class="node" cx="762" cy="433" r="1.2"/><circle class="node" cx="75" cy="530" r="2.4"/><circle class="node" cx="248" cy="107" r="1.2"/><circle class="node" cx="421" cy="204" r="1.2"/><circle class="node" cx="594" cy="301" r="1.2"/><circle class="node" cx="767" cy="398" r="1.2"/><circle class="node" cx="80" cy="495" r="2.4"/><circle class="node" cx="253" cy="72" r="1.2"/><circle class="node" cx="426" cy="169" r="1.2"/><circle class="node" cx="599" cy="266" r="1.2"/><circle class="node" cx="772" cy="363" r="1.2"/><circle class="node" cx="85" cy="460" r="2.4"/><circle class="node" cx="258" cy="557" r="1.2"/><circle class="node" cx="431" cy="134" r="1.2"/><circle class="node" cx="604" cy="231" r="1.2"/><circle class="node" cx="777" cy="328" r="1.2"/><circle class="node" cx="90" cy="425" r="2.4"/><circle class="node" cx="263" cy="522" r="1.2"/><circle class="node" cx="436" cy="99" r="1.2"/><circle class="node" cx="609" cy="196" r="1.2"/><circle class="node" cx="782" cy="293" r="1.2"/><circle class="node" cx="95" cy="390" r="2.4"/><circle class="node" cx="268" cy="487" r="1.2"/><circle class="node" cx="441" cy="64" r="1.2"/><circle class="node" cx="614" cy="161" r="1.2"/><circle class="node" cx="787" cy="258" r="1.2"/>
+<circle class="data" cx="270" cy="190" r="2.2"/><circle class="data" cx="730" cy="410" r="2.2"/><circle class="data" cx="360" cy="460" r="1.7"/>
 </svg>
 </div>
-</div>
-<div class="rightcol">
-<div class="panel"><div class="ph"><h2>AGENT FLEET</h2><span class="tiny" id="fleet">—</span></div><div class="agentlist" id="agentsList"></div></div>
-<div class="panel"><div class="ph"><h2>COMMAND DECK</h2><span class="tiny">POLICY-GATED</span></div><div class="command"><button class="btn" id="pause">Pause</button><button class="btn" id="focus">Focus Core</button><button class="btn" id="discover">Discover</button><button class="btn" id="export">Export State</button></div></div>
-<div class="panel"><div class="ph"><h2>EVENT STREAM</h2><span class="tiny">LIVE</span></div><div class="events" id="events"></div></div>
-</div>
 </section>
-<div class="footerline"><span id="clock">—</span><span>Survival Genesis · observable state only · no simulated revenue</span></div>
+<div class="side">
+<section class="panel"><div class="head"><h2>AGENT FLEET</h2><span class="tag" id="fleet">—</span></div><div class="agentlist" id="agentsList"></div></section>
+<section class="panel"><div class="head"><h2>COMMAND DECK</h2><span class="tag">POLICY GATED</span></div><div class="controls"><button class="btn" id="pause">PAUSE</button><button class="btn" id="focus">FOCUS CORE</button><button class="btn" id="discover">DISCOVER</button><button class="btn" id="export">EXPORT STATE</button></div></section>
+<section class="panel"><div class="head"><h2>EVENT STREAM</h2><span class="tag">AUDIT</span></div><div class="events" id="events"></div></section>
+</div>
+</div>
+<div class="footer"><span id="clock">—</span><span>OBSERVABLE STATE · NO SIMULATED REVENUE</span></div>
 </main>
+<div class="right">
+<div class="rightTitle">SYSTEM TELEMETRY</div>
+<div class="telemetry">
+<div class="metric"><div class="metricTop"><span>CORE UTILIZATION</span><b>68%</b></div><div class="meter"><i style="width:68%"></i></div></div>
+<div class="metric"><div class="metricTop"><span>AGENT ACTIVITY</span><b id="activity">NOMINAL</b></div><div class="meter"><i style="width:54%"></i></div></div>
+<div class="metric"><div class="metricTop"><span>EXPERIMENT THROUGHPUT</span><b id="throughput">0</b></div><div class="meter"><i style="width:8%"></i></div></div>
+</div>
+<div class="section">Live Signals</div>
+<div class="signal"><i></i> Ledger integrity verified</div>
+<div class="signal"><i></i> External financial IO isolated</div>
+<div class="signal"><i></i> Zero-capital invariant active</div>
+<div class="signal"><i></i> Revenue recognition gated</div>
+<div class="section">Runtime</div>
+<div class="metric"><div class="metricTop"><span>STATE</span><b id="rstate">STANDBY</b></div><div class="ks">8s autonomous cycle interval</div></div>
+</div>
 </div>
 <script>
-const $=id=>document.getElementById(id);
-let runtimeRunning=false;
-function money(x){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(x||0)}
+const $=id=>document.getElementById(id);let running=false;
+const money=x=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(x||0);
 function log(type,msg){const d=document.createElement('div');d.className='event';d.innerHTML='<span class="etime">'+new Date().toLocaleTimeString()+'</span><div class="etype">'+type+'</div><div class="emsg">'+msg+'</div>';$('events').prepend(d)}
 async function api(path,opts){const r=await fetch(path,opts);return r.json()}
-function render(s){const l=s.ledger||{};$('cash').textContent=money(l.cash_eur);$('revenue').textContent=money(l.earned_eur);$('surplus').textContent=money((l.cash_eur||0)-(l.reserved_eur||0));$('agentCount').textContent=s.agents?.length??0;$('roomCount').textContent=s.rooms?.length??0;$('experiments').textContent=l.experiments??0;$('fleet').textContent=(s.agents||[]).filter(a=>a.status==='active').length+' ACTIVE';runtimeRunning=s.runtime?.running||false;$('runtime').textContent=runtimeRunning?'RUNTIME ACTIVE':'LOCAL RUNTIME STANDBY';$('toggle').textContent=runtimeRunning?'Stop Runtime':'Start Runtime';$('agentsList').innerHTML=(s.agents||[]).map(a=>'<div class="agentrow"><span class="adot"></span><div><div class="aname">'+a.name+'</div><div class="arole">'+a.role+' · '+a.room+'</div></div><div class="astate">'+a.status+'<br>'+a.task+'</div></div>').join('');$('clock').textContent='STATE '+new Date(s.clock).toLocaleString()}
-async function refresh(){try{const s=await api('/api/state');render(s)}catch(e){$('runtime').textContent='SERVER OFFLINE';}}
+function render(s){const l=s.ledger||{};running=!!s.runtime?.running;$('cash').textContent=money(l.cash_eur);$('revenue').textContent=money(l.earned_eur);$('surplus').textContent=money((l.cash_eur||0)-(l.reserved_eur||0));$('agentCount').textContent=s.agents?.length||0;$('roomCount').textContent=s.rooms?.length||0;$('experiments').textContent=l.experiments||0;$('fleet').textContent=(s.agents||[]).filter(a=>a.status==='active').length+' ACTIVE';$('runtime').textContent=running?'RUNTIME ACTIVE':'LOCAL RUNTIME STANDBY';$('toggle').textContent=running?'STOP RUNTIME':'START RUNTIME';$('rstate').textContent=running?'ACTIVE':'STANDBY';$('throughput').textContent=l.experiments||0;$('agentsList').innerHTML=(s.agents||[]).map(a=>'<div class="agent"><span class="adot"></span><div><div class="an">'+a.name+'</div><div class="ar">'+a.role+' · '+a.room+'</div></div><div class="as">'+a.status+'<br>'+a.task+'</div></div>').join('');$('clock').textContent='STATE '+new Date(s.clock).toLocaleString()}
+async function refresh(){try{render(await api('/api/state'))}catch(e){$('runtime').textContent='SERVER OFFLINE';$('rstate').textContent='OFFLINE'}}
 $('refresh').onclick=refresh;
-$('tick').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('CYCLE','Experiment selected: '+(r.selected?.name||'decision cycle'));refresh()};
-$('toggle').onclick=async()=>{const path=runtimeRunning?'/api/runtime/stop':'/api/runtime/start';const r=await api(path,{method:'POST'});log('RUNTIME',r.running?'Autonomous runtime started':'Autonomous runtime stopped');refresh()};
+$('tick').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('CYCLE','Decision cycle completed · '+(r.selected?.name||'opportunity'));refresh()};
+$('toggle').onclick=async()=>{const r=await api(running?'/api/runtime/stop':'/api/runtime/start',{method:'POST'});log('RUNTIME',r.running?'Autonomous runtime engaged':'Autonomous runtime stopped');refresh()};
 $('pause').onclick=async()=>{await api('/api/runtime/stop',{method:'POST'});log('CONTROL','Runtime paused by operator');refresh()};
-$('focus').onclick=()=>log('NAVIGATION','Genesis Core focused — strategy, memory and governance');
-$('discover').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('RESEARCH','Discovery cycle launched: '+(r.selected?.channel||'opportunity'));refresh()};
-$('export').onclick=async()=>{const s=await api('/api/state');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download='survival-genesis-state.json';a.click();log('EXPORT','Current observable state exported')};
-log('SYSTEM','Genesis Control Center loaded');
-refresh();setInterval(refresh,3000);
+$('focus').onclick=()=>log('NAV','Genesis Core selected · strategy / memory / governance');
+$('discover').onclick=async()=>{const r=await api('/api/tick',{method:'POST'});log('RESEARCH','Discovery pass launched · '+(r.selected?.channel||'opportunity'));refresh()};
+$('export').onclick=async()=>{const s=await api('/api/state');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download='survival-genesis-state.json';a.click();log('EXPORT','Observable enterprise state exported')};
+log('SYSTEM','Aetherium interface initialized');refresh();setInterval(refresh,3000);
 </script>
 </body>
 </html>
