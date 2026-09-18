@@ -38,8 +38,11 @@ class EvolutionManager:
             except (KeyError,ValueError) as exc: raise ValueError("evolution verification requires verified evidence") from exc
         item["status"]="verified"; item["evidence_id"]=str(evidence_id); self._save(); return item
     def mark_deployed(self,proposal_id, deployment_evidence_id=""):
-        if self.evidence and not deployment_evidence_id:
-            raise ValueError("deployment requires evidence")
+        if self.evidence:
+            if not deployment_evidence_id:
+                raise ValueError("deployment requires evidence")
+            try: self.evidence.require_verified(deployment_evidence_id)
+            except (KeyError,ValueError) as exc: raise ValueError("deployment requires verified evidence") from exc
         item=next((x for x in self.items if x["id"]==proposal_id),None)
         if not item or item["status"]!="verified": raise ValueError("proposal must be verified before deployment")
         item["status"]="deployed"; self._save(); return item
