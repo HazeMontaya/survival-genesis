@@ -56,3 +56,34 @@ The system must not spam, impersonate, defraud, evade platform controls, manipul
 ## Repository status
 
 The project contains the economic kernel, persistent operating state, seed-agent runtime, emergent capability/project/agent graph, dependency-aware task execution, artifact pipeline, live control server, immersive SVG world and tests. Real provider integrations are the next external-execution layer and are deliberately gated rather than faked.
+
+
+## Money, ownership and security boundary
+
+Survival Genesis treats money as a capability with explicit custody and policy, not as an unrestricted AI resource. The safest deployment is an account held by the human owner or their legal company, with the runtime receiving only the minimum provider permissions required to collect or operate. Never put private keys, banking passwords, exchange API secrets or recovery phrases in git, source files, prompts, skills or agent-visible memory.
+
+The treasury boundary supports:
+- owner verification before an external account can be bound
+- hashed account references rather than storing the raw account identifier in the treasury record
+- replay protection for verified revenue events
+- explicit collection, payout and live-trading gates
+- payout destination allowlisting
+- maximum single payout, daily payout and minimum-reserve limits
+- separate live versus paper trading mode
+- daily trade-notional limits
+- an independent resource ledger for cash, reserves, compute credits, inference budget and other scarce resources
+
+**Important:** enabling a financial gate does not create money, a bank account, an exchange account, legal ownership, or market access. Those must be established with the provider under the owner's identity and terms. The runtime must never bypass KYC, platform restrictions, withdrawal controls or authorization requirements.
+
+## Recommended zero-capital activation path
+
+1. Run the system locally with every financial gate off.
+2. Create a dedicated account/wallet owned by you or your legal company; do not reuse a personal password or expose its recovery material to the agent.
+3. Create provider credentials with the narrowest permissions possible. Prefer read/receive permissions first; add trading only after the non-trading path is audited.
+4. Store secrets outside the repository using the host secret store/environment and restrict file permissions. GitHub secret scanning and push protection should remain enabled.
+5. Bind the account through the owner-verification boundary. The runtime records only a fingerprint and verification state.
+6. Configure a non-zero reserve and strict payout/trading caps. Use paper trading first; live trading is an explicit separate mode.
+7. Start with real revenue collection and fulfillment. Only after independently verified revenue exists should the runtime gain authority to spend part of it.
+8. Keep owner withdrawal destinations allowlisted. Do not give the agent permission to change its own withdrawal destination.
+
+The target resource loop is: **opportunity → evidence → free/local build → distribution → lead → order → verified payment → fulfillment → delivery → profit → reserve → reinvestment → capability growth**. A missing provider, credential, balance or authorization is represented as a resource gap; it is never treated as if it already exists.
