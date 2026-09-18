@@ -1,0 +1,40 @@
+# Local environments
+.venv/
+venv/
+env/
+
+# Python build/test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Runtime state — never source-controlled
+workspace/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+wallet.json
+treasury.json
+owner.json
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
