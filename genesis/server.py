@@ -6,7 +6,7 @@ from .agent import GenesisAgent
 from .ecosystem import ecosystem_snapshot
 
 ROOT=Path(__file__).resolve().parent.parent
-DASHBOARD=ROOT/"dashboard"/"index.html"
+WORLD=ROOT/"world"/"index.html"
 
 class Runtime:
     def __init__(self):
@@ -29,12 +29,13 @@ class Runtime:
             self.thread=Thread(target=self.loop,daemon=True); self.thread.start()
     def stop(self):
         self.running=False; self.stop_event.set()
+
 runtime=Runtime()
 
 class Handler(BaseHTTPRequestHandler):
     def send_json(self,payload,code=200):
-        raw=json.dumps(payload).encode()
-        self.send_response(code); self.send_header("Content-Type","application/json"); self.send_header("Cache-Control","no-store")
+        raw=json.dumps(payload,ensure_ascii=False).encode()
+        self.send_response(code); self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store")
         self.send_header("Content-Length",str(len(raw))); self.end_headers(); self.wfile.write(raw)
     def body(self):
         n=int(self.headers.get("Content-Length","0")); return json.loads(self.rfile.read(n) or b"{}")
@@ -47,7 +48,7 @@ class Handler(BaseHTTPRequestHandler):
                       "runtime":{"running":runtime.running,"tick_interval_seconds":8,"last_tick":runtime.last_result is not None,"last_error":runtime.last_error}})
             self.send_json(s); return
         if self.path in ("/","/index.html"):
-            raw=DASHBOARD.read_bytes(); self.send_response(200); self.send_header("Content-Type","text/html; charset=utf-8")
+            raw=WORLD.read_bytes(); self.send_response(200); self.send_header("Content-Type","text/html; charset=utf-8")
             self.send_header("Content-Length",str(len(raw))); self.end_headers(); self.wfile.write(raw); return
         self.send_json({"error":"not_found"},404)
     def do_POST(self):
@@ -69,5 +70,5 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,*_): return
 
 def serve(host="127.0.0.1",port=8765):
-    print(f"Survival Genesis control center: http://{host}:{port}")
+    print(f"Survival Genesis Welt: http://{host}:{port}")
     ThreadingHTTPServer((host,port),Handler).serve_forever()
