@@ -52,6 +52,7 @@ class TaskBoard:
         return all((self.get(d) and self.get(d).status=="done") for d in t.dependencies)
 
     def start_next(self,agent=None):
+        self.unblock()
         candidates=[t for t in self.items if t.status=="queued" and (agent is None or t.agent==agent)]
         for t in candidates:
             if not self._deps_done(t):
