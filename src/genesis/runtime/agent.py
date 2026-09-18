@@ -71,11 +71,11 @@ class GenesisAgent:
     def __init__(self, store=None, policy=None):
         self.store=store or StateStore()
         self.policy=policy or SurvivalPolicy()
+        root=self.store.path.parent
         self.evidence=EvidenceLedger(root/"evidence.json")
         self.orders=OrderEngine(root/"orders.json")
         self.resources=ResourceLedger(root/"resources.json")
         self.economy=Economy(self.store,self.evidence,self.resources)
-        root=self.store.path.parent
         self.company=CompanyProfile()
         self.tasks=TaskBoard(root/"tasks.json")
         self.memory=MemoryGraph(root/"memory.json")
