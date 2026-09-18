@@ -24,6 +24,7 @@ class ArtifactStore:
     def create_markdown(self,title,body,kind="product"):
         slug=re.sub(r"[^a-z0-9]+","-",title.lower()).strip("-")[:60] or uuid.uuid4().hex[:8]
         now=datetime.now(timezone.utc).isoformat(); p=self.root/f"{slug}.md"
+        self.root.mkdir(parents=True,exist_ok=True)
         p.write_text(body,encoding="utf-8")
         a=Artifact(uuid.uuid4().hex[:10],kind,title,str(p),"ready",now,now)
         self.items.append(a); self._save(); return a
