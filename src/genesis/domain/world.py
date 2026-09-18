@@ -119,7 +119,7 @@ class WorldModel:
                              WorldRelation(f"core:{a['id']}", "core:genesis", aid, "coordinates", 0.8))
 
         for i, t in enumerate(tasks):
-            x, y = self._pos(t["id"], "production" if t.get("room") != "research" else "intelligence", i, max(1, len(tasks)))
+            x, y = self._pos(t["id"], task_room if "task_room" in locals() else "production", i, max(1, len(tasks)))
             state = {"active": "working", "done": "complete", "blocked": "blocked",
                      "failed": "error", "verifying": "reviewing"}.get(t.get("status"), "queued")
             tid = f"task:{t['id']}"
