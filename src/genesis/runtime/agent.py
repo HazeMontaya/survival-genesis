@@ -176,10 +176,12 @@ class GenesisAgent:
             self.capabilities.transition(task.capability_id, "in_entwicklung")
         try:
             if task.capability_id in {"observe_environment", "research_observation"}:
-                signal = self.signals.scan(DEFAULT_OPPORTUNITIES[0])
-                self.memory.remember("observation", signal["summary"], signal["score"])
-                ev = self._verified(task.id, task.capability_id, signal["summary"], signal, "signal-engine")
-                result = {"evidence_id": ev.id, "signal": signal}
+                signals = [self.signals.scan(opportunity) for opportunity in DEFAULT_OPPORTUNITIES]
+                best = max(signals, key=lambda item: item.get("score", 0))
+                for signal in signals:
+                    self.memory.remember("observation", signal["summary"], signal["score"])
+                ev = self._verified(task.id, task.capability_id, "Umgebung und verfügbare Erwerbswege beobachtet", {"signals": signals, "selected": best}, "signal-engine")
+                result = {"evidence_id": ev.id, "signals": signals, "selected": best}
             elif task.capability_id == "goal_decomposition":
                 self.memory.remember("goal", self.company.mission, .9)
                 ev = self._verified(task.id, "goal", "Mission als überprüfbarer Arbeitsgegenstand gespeichert", {"mission": self.company.mission})
@@ -188,8 +190,13 @@ class GenesisAgent:
                 child = self.agents.spawn("Researcher", "Research, Evidenz und Marktbeobachtung", "genesis-1",
                                           ["research_observation"], ["read_file", "list_files", "run_tests", "remember", "send_message"])
                 self.messages.send("genesis-1", child.id, "Arbeite nur mit belegbaren Beobachtungen.", "onboarding")
-                ev = self._verified(task.id, "agent_created", "Researcher erzeugt", {"agent_id": child.id})
-                result = {"evidence_id": ev.id, "agent_id": child.id}
+                research_project = self.projects.create("Market Research", "Finde den aktuell sinnvollsten Nullkapital-Erwerbsweg und dokumentiere Evidenz.", child.id, ["research_observation"])
+                research_task = self.tasks.create(child.id, "research", "Markt- und Chancenbeobachtung durchführen", 90, "research_observation", research_project.id)
+                self.projects.attach_task(research_project.id, research_task.id)
+                self.projects.transition(research_project.id, "active")
+                self.workflows.ensure_for_project(research_project, self.tasks.snapshot())
+                ev = self._verified(task.id, "agent_created", "Researcher erzeugt und mit einer realen Arbeitsaufgabe gestartet", {"agent_id": child.id, "task_id": research_task.id})
+                result = {"evidence_id": ev.id, "agent_id": child.id, "task_id": research_task.id}
             elif task.capability_id == "offer_creation":
                 choice = rank(DEFAULT_OPPORTUNITIES)[0]
                 offer = self.commerce.create_offer(choice)
