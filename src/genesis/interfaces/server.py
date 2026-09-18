@@ -6,7 +6,7 @@ from genesis.runtime.agent import GenesisAgent
 from genesis.interfaces.ecosystem import ecosystem_snapshot
 from genesis.runtime.heartbeat import HeartbeatDaemon
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT=Path(__file__).resolve().parents[3]
 WORLD=ROOT/"web"/"index.html"
 
 class Runtime:
