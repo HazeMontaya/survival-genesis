@@ -46,7 +46,7 @@ class NeedEngine:
             needs.append({"capability":"agent_creation","title":"Arbeitsfähigkeit durch Spezialisierung erweitern","reason":"Der Seed-Agent ist ein Single Point of Execution.","urgency":85,"prerequisites":["goal_decomposition"]})
         if not offers:
             needs.append({"capability":"offer_creation","title":"Erstes lieferbares Ergebnis erzeugen","reason":"Noch kein verwertbares Ergebnis existiert.","urgency":80,"prerequisites":["goal_decomposition"]})
-        if offers and not any("research" in x["purpose"].lower() for x in agents):
+        if offers and not any("research" in x.get("purpose","").lower() for x in agents):
             needs.append({"capability":"specialist_research","title":"Evidenz- und Marktbeobachtung spezialisieren","reason":"Angebotsentscheidungen brauchen externe Evidenz.","urgency":70,"prerequisites":["agent_creation"]})
         if not skills:
             needs.append({"capability":"skill_creation","title":"Verifiziertes Verfahren als Skill speichern","reason":"Wiederholbare Arbeit sollte als prozedurales Wissen erhalten bleiben.","urgency":60,"prerequisites":["agent_creation"]})
@@ -73,7 +73,7 @@ class GenesisAgent:
         self.policy=policy or SurvivalPolicy()
         root=self.store.path.parent
         self.evidence=EvidenceLedger(root/"evidence.json")
-        self.orders=OrderEngine(root/"orders.json")
+        self.orders=OrderEngine(root/"orders.json",self.evidence)
         self.resources=ResourceLedger(root/"resources.json")
         self.economy=Economy(self.store,self.evidence,self.resources)
         self.company=CompanyProfile()
@@ -131,13 +131,22 @@ class GenesisAgent:
         self._capability(cid,need["title"],descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
         return cid,need["title"],self._project_for(cid,need["title"],need["reason"])
 
+    def _verify_evidence(self, evidence_id, verifier="runtime"):
+        """Only the runtime verifier may promote deterministic internal evidence."""
+        return self.evidence.verify(evidence_id, verifier=verifier)
+
+    def _record_verified(self, subject_id, kind, summary, payload=None, source="runtime"):
+        ev=self.evidence.record(subject_id,kind,summary,payload,source,status="observed")
+        self._verify_evidence(ev.id)
+        return ev
+
     def _execute(self,task):
         if task.capability_id:self.capabilities.transition(task.capability_id,"in_entwicklung")
         try:
             if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self.evidence.record(task.id,"observation",signal["summary"],signal,"signal-engine"); evidence={"type":"observation","signal":signal,"evidence_id":ev.id}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self._record_verified(task.id,"observation",signal["summary"],signal,"signal-engine"); evidence={"type":"observation","signal":signal,"evidence_id":ev.id}
             elif task.capability_id=="goal_decomposition":
-                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); ev=self.evidence.record(task.id,"goal_decomposition","Mission in überprüfbare Teilziele zerlegt",{"mission":self.company.mission},"runtime"); evidence={"type":"goal_decomposition","verified":True,"evidence_id":ev.id}
+                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); ev=self._record_verified(task.id,"goal_decomposition","Mission in überprüfbare Teilziele zerlegt",{"mission":self.company.mission},"runtime"); evidence={"type":"goal_decomposition","verified":True,"evidence_id":ev.id}
             elif task.capability_id=="agent_creation":
                 child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
                 self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.","onboarding")
@@ -145,25 +154,25 @@ class GenesisAgent:
                 self._capability("research_observation","Recherche beobachten","Externe Signale erfassen und als Evidenz speichern.",child.id)
                 child_task=self.tasks.create(child.id,"research","Führe eine Recherchebeobachtung durch",70,"research_observation","")
                 self.messages.send(task.agent,child.id,"Arbeitsauftrag: Führe die Recherchebeobachtung aus und melde Evidenz.","task")
-                evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id}
+                ev=self._record_verified(task.id,"agent_created","Spezialisierter Research-Agent erzeugt",{"agent_id":child.id,"task_id":child_task.id},"runtime"); evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id,"evidence_id":ev.id}
             elif task.capability_id=="research_observation":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("research",signal["summary"],signal["score"]); self.messages.send(task.agent,"genesis-1",signal["summary"],"result"); evidence={"type":"research_observation","signal":signal}
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("research",signal["summary"],signal["score"]); self.messages.send(task.agent,"genesis-1",signal["summary"],"result"); ev=self._record_verified(task.id,"research_observation",signal["summary"],signal,"signal-engine"); evidence={"type":"research_observation","signal":signal,"evidence_id":ev.id}
             elif task.capability_id=="offer_creation":
-                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); ev=self.evidence.record(offer["id"],"offer_created","Angebot als Artefakt erzeugt",offer,"commerce"); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"],"evidence_id":ev.id}
+                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); ev=self._record_verified(offer["id"],"offer_created","Angebot als Artefakt erzeugt",offer,"commerce"); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"],"evidence_id":ev.id}
             elif task.capability_id=="specialist_research":
-                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"]); self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.","onboarding"); evidence={"type":"agent_created","agent_id":child.id}
+                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"]); self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.","onboarding"); ev=self._record_verified(task.id,"specialist_agent_created","Spezialisierter Research-Agent erzeugt",{"agent_id":child.id},"runtime"); evidence={"type":"agent_created","agent_id":child.id,"evidence_id":ev.id}
             elif task.capability_id=="skill_creation":
-                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern."); evidence={"type":"skill_created","skill_id":skill.id}
+                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern."); ev=self._record_verified(task.id,"skill_created","Wiederverwendbarer Recherche-Skill gespeichert",{"skill_id":skill.id},"runtime"); evidence={"type":"skill_created","skill_id":skill.id,"evidence_id":ev.id}
             elif task.capability_id=="self_testing":
                 result=self.tools.call("run_tests")
                 if result["returncode"]!=0: raise RuntimeError(result["stderr"] or result["stdout"])
-                evidence={"type":"test_run","returncode":result["returncode"],"stdout":result["stdout"][-3000:]}
+                ev=self._record_verified(task.id,"test_run","Repository-Tests erfolgreich ausgeführt",result,"runtime"); evidence={"type":"test_run","returncode":result["returncode"],"stdout":result["stdout"][-3000:],"evidence_id":ev.id}
             elif task.capability_id=="external_publishing":
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
                 if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
-                evidence={"type":"connector_ready","verified":True}
+                ev=self._record_verified(task.id,"connector_ready","Konfigurierter Veröffentlichungsanschluss vorhanden",{"configured":True},"runtime"); evidence={"type":"connector_ready","verified":True,"evidence_id":ev.id}
             else:
-                ev=self.evidence.record(task.id,"capability_step",f"Capability {task.capability_id} ausgeführt",{"task_id":task.id},"runtime")
+                ev=self._record_verified(task.id,"capability_step",f"Capability {task.capability_id} ausgeführt",{"task_id":task.id},"runtime")
                 evidence={"type":"capability_step","verified":True,"evidence_id":ev.id}
             self.tasks.complete(task.id,evidence=evidence,result="verifiziert")
             if task.capability_id:
