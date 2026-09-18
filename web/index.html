@@ -81,7 +81,7 @@ footer strong{color:#aaa;font-weight:500}
     </div>
   </aside>
   <section class="canvas">
-    <div class="maptools"><div class="pill" id="worldLabel">WORLD / LIVE STATE</div><div class="actions"><button id="refresh">REFRESH</button><button id="reset">RESET VIEW</button></div></div>
+    <div class="maptools"><div class="pill" id="worldLabel">WORLD / LIVE STATE</div><div class="actions"><button id="refresh">REFRESH</button><button id="replay">REPLAY</button><button id="reset">RESET VIEW</button></div></div>
     <svg id="world" viewBox="-900 -600 1800 1200" aria-label="Genesis autonomous world">
       <defs>
         <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -104,11 +104,11 @@ footer strong{color:#aaa;font-weight:500}
 <script>
 const NS="http://www.w3.org/2000/svg";const $=id=>document.getElementById(id);const svg=$("world");
 let state=null, selected=null, networkMode=false, view={x:0,y:0,z:1};
-const palette={core:"#e8ff45",agent:"#79e2ad",capability:"#71a7ff",project:"#ff8a3d",task:"#9a9aff",artifact:"#d9a4ff",connector:"#ff6f9b",skill:"#f5dc62",tool:"#72c9ff",opportunity:"#e8ff45",order:"#ff8a3d",evidence:"#b8b8b0",resource:"#fff"};
+const palette={memory:"#c8b6ff",core:"#e8ff45",agent:"#79e2ad",capability:"#71a7ff",project:"#ff8a3d",task:"#9a9aff",artifact:"#d9a4ff",connector:"#ff6f9b",skill:"#f5dc62",tool:"#72c9ff",opportunity:"#e8ff45",order:"#ff8a3d",evidence:"#b8b8b0",resource:"#fff"};
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function E(t,a={}){const e=document.createElementNS(NS,t);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e}
 function layout(entities){
- const groups={agent:[],capability:[],project:[],task:[],artifact:[],connector:[],skill:[],tool:[],opportunity:[],order:[],evidence:[],resource:[]};
+ const groups={agent:[],capability:[],project:[],task:[],artifact:[],connector:[],skill:[],tool:[],opportunity:[],order:[],evidence:[],resource:[],memory:[]};
  entities.forEach(e=>{if(groups[e.type])groups[e.type].push(e)});
  if(networkMode){
    const out={"genesis-core":[0,0]}, all=entities.filter(e=>e.id!=="genesis-core");
@@ -132,6 +132,7 @@ let history=[], replayIndex=-1, replayTimer=null;
 async function loadHistory(){try{const r=await fetch("/api/events?limit=300");const j=await r.json();history=j.events||[];renderFeed(history.slice(-12));}catch(e){}}
 function renderFeed(events){$("feed").innerHTML=events.slice(-12).reverse().map(e=>'<div class="event"><small>'+esc(new Date(Number(e.ts)*1000).toLocaleTimeString())+' · '+esc(e.actor)+' · '+esc(e.kind)+'</small><p>'+esc(JSON.stringify(e.payload))+'</p></div>').join("")}
 function replayTo(index){if(!state||!history.length)return;replayIndex=Math.max(0,Math.min(index,history.length-1));const e=history[replayIndex];$("worldLabel").textContent="REPLAY / "+new Date(Number(e.ts)*1000).toLocaleTimeString();$("clock").textContent="REPLAY "+(replayIndex+1)+" / "+history.length;renderFeed(history.slice(0,replayIndex+1));}
+function startReplay(){if(!history.length)return;stopReplay();replayIndex=0;replayTo(0);replayTimer=setInterval(()=>{if(replayIndex>=history.length-1){stopReplay();return}replayTo(replayIndex+1)},700)}
 function stopReplay(){if(replayTimer)clearInterval(replayTimer);replayTimer=null;replayIndex=-1;$("worldLabel").textContent=networkMode?"NEURAL LAYER / LIVE STATE":"WORLD / LIVE STATE";}
 function draw(s){state=s;const ents=s.world?.entities||[], rels=s.world?.relations||[], p=layout(ents);$("nodes").innerHTML="";$("links").innerHTML="";
  for(const r of rels){if(!p[r.source]||!p[r.target])continue;const [x1,y1]=p[r.source],[x2,y2]=p[r.target];const line=E("line",{class:"link"+(r.kind==="works_on"||r.kind==="spawned"?" hot":"")+(networkMode?" neural":""),x1,y1,x2,y2,"stroke-width":Math.min(4,Math.max(1,r.intensity||1))});$("links").append(line)}
@@ -156,8 +157,8 @@ async function refresh(){
   stopReplay();
   const r=await fetch("/api/state"); state=await r.json(); draw(state); loadHistory();
 }
-try{draw(await api("/api/state"))}catch(e){$("runtimeState").textContent="runtime / error";$("bottleneck").textContent=e.message}}
-$("refresh").onclick=refresh;\n$("reset").onclick=()=>{view={x:0,y:0,z:1};draw(state)};$("tick").onclick=async()=>{await api("/api/tick",{method:"POST"});refresh()};$("run").onclick=async()=>{const running=state?.runtime?.running;await api(running?"/api/runtime/stop":"/api/runtime/start",{method:"POST"});$("run").textContent=running?"START":"STOP";refresh()};$("reset").onclick=()=>{view={x:0,y:0,z:1};apply();refresh()};
+try{draw(await api("/api/state"))}catch(e){$("runtimeState").textContent="runtime / error";$("bottleneck").textContent=e.message}
+$("refresh").onclick=refresh;$("replay").onclick=startReplay;\n$("reset").onclick=()=>{view={x:0,y:0,z:1};draw(state)};$("tick").onclick=async()=>{await api("/api/tick",{method:"POST"});refresh()};$("run").onclick=async()=>{const running=state?.runtime?.running;await api(running?"/api/runtime/stop":"/api/runtime/start",{method:"POST"});$("run").textContent=running?"START":"STOP";refresh()};$("reset").onclick=()=>{view={x:0,y:0,z:1};apply();refresh()};
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");networkMode=b.dataset.mode==="agents"||b.dataset.mode==="work";$("worldLabel").textContent=b.dataset.mode.toUpperCase()+" / LIVE STATE";if(state)draw(state)});
 document.addEventListener("keydown",e=>{if(e.key.toLowerCase()==="n"){networkMode=!networkMode;$("worldLabel").textContent=networkMode?"NEURAL LAYER / LIVE STATE":"WORLD / LIVE STATE";if(state)draw(state)}});
 
