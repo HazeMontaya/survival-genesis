@@ -35,6 +35,19 @@ class StateStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(asdict(ledger), indent=2))
 
+    def events(self) -> list[dict]:
+        p = self.path.parent / "events.jsonl"
+        if not p.exists(): return []
+        rows = []
+        for line in p.read_text(encoding="utf-8").splitlines():
+            if not line.strip(): continue
+            try:
+                raw = json.loads(line)
+                rows.append({"ts": raw.get("ts"), "type": raw.get("kind"), "data": raw.get("data", {})})
+            except json.JSONDecodeError:
+                continue
+        return rows
+
     def event(self, kind: str, data: dict) -> None:
         p = self.path.parent / "events.jsonl"
         p.parent.mkdir(parents=True, exist_ok=True)
