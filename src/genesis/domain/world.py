@@ -121,6 +121,20 @@ class WorldModel:
         for s in agent.skills.snapshot(): self.ensure("skill:"+s["id"],"skill",s["name"],"genesis-core","",s["purpose"],room="knowledge")
         for t in agent.tools.snapshot():
             if t.get("enabled"): self.ensure("tool:"+t["id"],"tool",t["id"],"genesis-core","","Werkzeug: "+t["description"],room="factory")
+        for m in agent.memory.snapshot():
+            size = min(4.0, 1.0 + (m.get("uses", 0) ** 0.5))
+            visual = "stale" if m.get("status") == "stale" else ("tree" if m.get("uses", 0) >= 5 else "plant")
+            self.ensure("memory:"+m["id"], "memory", m["content"][:80], "garden", "", m.get("kind",""), room="knowledge", visual_state=visual, size=size)
+            for target in m.get("links", []):
+                if any(x.id == "memory:"+target for x in self.entities):
+                    self.relate("memory:"+m["id"], "memory:"+target, "knowledge", min(5.0, 1.0 + m.get("uses", 0) * .2))
+        for msg in agent.messages.snapshot()[-100:]:
+            mid = "message:" + msg["id"]
+            self.ensure(mid, "message", "communication", "genesis-core", msg.get("sender",""), msg.get("content","")[:120], room="gateway", visual_state="moving")
+            sender = "agent:" + msg.get("sender","")
+            receiver = "agent:" + msg.get("receiver","")
+            if any(x.id == sender for x in self.entities) and any(x.id == receiver for x in self.entities):
+                self.relate(sender, receiver, "communicates", 2.0)
         for e in agent.evidence.snapshot():
             self.ensure("evidence:"+e["id"],"evidence",e.get("kind","evidence"),"genesis-core",e.get("subject_id",""),e.get("summary",""),room="knowledge",visual_state=e.get("status","observed"))
         for o in agent.orders.snapshot():
