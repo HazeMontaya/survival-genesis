@@ -19,6 +19,8 @@ from .skills import SkillRegistry
 from .soul import SoulStore
 from .treasury import Treasury
 from .resources import ResourceLedger
+from .evidence import EvidenceLedger
+from .economy_state import CommerceState
 
 from .needs import NeedEngine
 from .constitution import Constitution
@@ -51,6 +53,8 @@ class GenesisAgent:
         self.executor=CapabilityExecutor(self)
         self.treasury=Treasury(self.store)
         self.resources=ResourceLedger(root/"resources.json")
+        self.evidence=EvidenceLedger(root/"evidence.json")
+        self.orders=CommerceState(root/"orders.json")
         self.execution_policy=PolicyEngine(self.store,self.constitution,self.treasury,self.resources)
         self.tools.policy=self.execution_policy
         self.skills=SkillRegistry(root/"skills.json")
@@ -81,6 +85,8 @@ class GenesisAgent:
             "world":self.world.snapshot(self),
             "treasury":self.treasury.snapshot(),
             "resources":self.resources.snapshot(),
+            "evidence":self.evidence.snapshot(),
+            "orders":self.orders.snapshot(),
             "constitution":self.constitution.snapshot(),
             "policy_audit":str(self.execution_policy.audit_path),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
