@@ -28,6 +28,12 @@ class ResourceLedger:
             if float(v)<0: raise ValueError("resource balances cannot be negative")
             setattr(self.state,k,float(v))
         self.save(); return self.snapshot()
+    def sync_cash(self,amount):
+        amount=float(amount)
+        if amount<0: raise ValueError("cash cannot be negative")
+        self.state.cash_eur=amount
+        self.save()
+
     def credit_cash(self,amount):
         if amount<0: raise ValueError("amount must be positive")
         self.state.cash_eur+=float(amount); self.save()
