@@ -17,6 +17,9 @@ class Order:
     created_at:str
     updated_at:str
 
+    def __getitem__(self,key):
+        return getattr(self,key)
+
 class OrderEngine:
     """Provider-neutral commercial lifecycle. External money is never fabricated."""
     
