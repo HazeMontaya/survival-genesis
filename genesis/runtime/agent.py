@@ -1,4 +1,5 @@
 from genesis.core.company import CompanyProfile
+from genesis.core.constitution import Constitution
 from genesis.core.database import RuntimeDatabase
 from genesis.core.policy import PolicyEngine
 from genesis.core.resources import ResourceLedger
@@ -11,6 +12,8 @@ from genesis.domain.treasury import Treasury
 from genesis.agents.directory import AgentDirectory
 from genesis.agents.social import MessageBus
 from genesis.knowledge.memory import MemoryGraph
+from genesis.knowledge.evidence import EvidenceLedger
+from genesis.knowledge.identity import IdentityStore
 from genesis.knowledge.signals import SignalEngine
 from genesis.knowledge.skills import SkillRegistry
 from genesis.platform.artifacts import ArtifactStore
@@ -34,7 +37,7 @@ class NeedEngine:
   return sorted([x for x in n if all(active(p) for p in x["prerequisites"])],key=lambda x:(-x["urgency"],x["capability"]))
 class GenesisAgent:
  def __init__(self,store=None):
-  self.store=store or StateStore();root=self.store.path.parent;self.db=RuntimeDatabase(root/"runtime.db");self.control=PolicyEngine(self.db,root);self.policy=SurvivalPolicy();self.resources=ResourceLedger(root/"resources.json");self.company=CompanyProfile();self.memory=MemoryGraph(root/"memory.json");self.artifacts=ArtifactStore(root/"artifacts");self.connectors=ConnectorRegistry(self.store);self.agents=AgentDirectory(root/"agents.json");self.agents.ensure_genesis();self.messages=MessageBus(root/"messages.json");self.capabilities=CapabilityRegistry(root/"capabilities.json");self.projects=ProjectBoard(root/"projects.json");self.tasks=TaskBoard(root/"tasks.json");self.skills=SkillRegistry(root/"skills.json");self.signals=SignalEngine(self.db,self.memory);self.commerce=CommerceEngine(self.store,self.artifacts,self.memory,self.db);self.economy=Economy(self.store,self.db);self.treasury=Treasury(self.store,self.db);self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.control);self.world=WorldModel(root/"world.json");self.needs=NeedEngine(self)
+  self.store=store or StateStore();root=self.store.path.parent;self.db=RuntimeDatabase(root/"runtime.db");self.control=PolicyEngine(self.db,root);self.policy=SurvivalPolicy();self.resources=ResourceLedger(root/"resources.json");self.company=CompanyProfile();self.constitution=Constitution();self.memory=MemoryGraph(root/"memory.json");self.evidence=EvidenceLedger(root/"evidence.json");self.identity=IdentityStore(root/"identity.json");self.identity.ensure(self.company.mission);self.artifacts=ArtifactStore(root/"artifacts");self.connectors=ConnectorRegistry(self.store);self.agents=AgentDirectory(root/"agents.json");self.agents.ensure_genesis();self.messages=MessageBus(root/"messages.json");self.capabilities=CapabilityRegistry(root/"capabilities.json");self.projects=ProjectBoard(root/"projects.json");self.tasks=TaskBoard(root/"tasks.json");self.skills=SkillRegistry(root/"skills.json");self.signals=SignalEngine(self.db,self.memory);self.commerce=CommerceEngine(self.store,self.artifacts,self.memory,self.db);self.economy=Economy(self.store,self.db);self.treasury=Treasury(self.store,self.db);self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.control);self.world=WorldModel(root/"world.json");self.needs=NeedEngine(self)
  def snapshot(self):self.world.sync(self);return {"company":self.company.snapshot(),"ledger":self.store.load().__dict__,"resources":self.resources.snapshot(),"agents":self.agents.snapshot(),"capabilities":self.capabilities.snapshot(),"projects":self.projects.snapshot(),"tasks":self.tasks.snapshot(),"memory":self.memory.snapshot(),"artifacts":self.artifacts.snapshot(),"signals":self.signals.snapshot(),"commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"skills":self.skills.snapshot(),"tools":self.tools.snapshot(),"treasury":self.treasury.snapshot(),"world":self.world.snapshot(),"runtime_db":self.db.snapshot(),"mode":self.policy.mode(self.store.load()),"top_opportunities":[x.name for x in rank(DEFAULT_OPPORTUNITIES)]}
  def tick(self):
   need=next(iter(self.needs.detect()),None);created=None
