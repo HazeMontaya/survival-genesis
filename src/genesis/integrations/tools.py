@@ -14,7 +14,7 @@ class ToolRegistry:
     def __init__(self,root,store,memory=None,messages=None,policy=None):
         self.root=Path(root).resolve()
         self.store=store
-        self.memory=memory
+        self.memory=memory or __import__('genesis.domain.memory',fromlist=['MemoryGraph']).MemoryGraph(self.root / "memory.json")
         self.messages=messages
         self.policy=policy
         self.specs=[
