@@ -229,9 +229,13 @@ class GenesisAgent:
                 self.agents.set_activity(a["id"], "processing", task.room)
                 self.runtime_db.event("task_started", {"task_id": task.id, "agent_id": a["id"], "room": task.room}, actor=a["id"])
                 result = self.execute(task)
+                inbox = self.messages.inbox(a["id"], mark_delivered=True)
+                if inbox:
+                    self.agents.set_activity(a["id"], "collaborating", task.room)
+                    self.runtime_db.event("messages_delivered", {"agent_id": a["id"], "count": len(inbox), "message_ids": [m["id"] for m in inbox]}, actor=a["id"])
                 final_activity = "completed" if "error" not in result else "error"
                 self.agents.set_activity(a["id"], final_activity, task.room)
-                self.runtime_db.event("task_completed" if final_activity == "completed" else "task_failed", {"task_id": task.id, "agent_id": a["id"]}, actor=a["id"])
+                self.runtime_db.event("task_completed" if final_activity == "completed" else "task_failed", {"task_id": task.id, "agent_id": a["id"], "evidence_id": result.get("evidence_id", "")}, actor=a["id"])
                 self.agents.set_activity(a["id"], "idle", "core")
                 executed.append({"task_id": task.id, "agent": a["id"], "result": result})
         self.world.project(self)
