@@ -123,7 +123,6 @@ class GenesisAgent:
                 evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
             elif task.capability_id=="specialist_research":
                 child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"])
-                self.capabilities.assign_agent="noop" if False else None
                 evidence={"type":"agent_created","agent_id":child.id}
             elif task.capability_id=="external_publishing":
                 configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
