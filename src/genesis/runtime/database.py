@@ -151,6 +151,18 @@ class RuntimeDatabase:
                  json.dumps(evidence, ensure_ascii=False, sort_keys=True)),
             )
 
+    def verify_event_chain(self) -> bool:
+        import hashlib
+        with self._connect() as db:
+            rows = db.execute("SELECT kind, actor, payload, prev_hash, hash FROM events ORDER BY rowid ASC").fetchall()
+        previous = ""
+        for row in rows:
+            expected = hashlib.sha256(f"{previous}|{row['kind']}|{row['actor']}|{row['payload']}".encode()).hexdigest()
+            if row["prev_hash"] != previous or row["hash"] != expected:
+                return False
+            previous = row["hash"]
+        return True
+
     def snapshot(self) -> dict:
         with self._connect() as db:
             events = db.execute("SELECT COUNT(*) n FROM events").fetchone()["n"]

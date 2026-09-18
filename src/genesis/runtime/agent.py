@@ -18,6 +18,8 @@ from genesis.integrations.tools import ToolRegistry
 from genesis.domain.skills import SkillRegistry
 from genesis.domain.soul import SoulStore
 from genesis.integrations.treasury import Treasury
+from genesis.runtime.database import RuntimeDatabase
+from genesis.runtime.policy import PolicyEngine
 from genesis.core.resources import ResourceLedger
 
 class NeedEngine:
@@ -80,7 +82,9 @@ class GenesisAgent:
         self.agents=AgentDirectory(root/"agents.json")
         self.agents.ensure_genesis()
         self.messages=MessageBus(root/"messages.json")
-        self.tools=ToolRegistry(root,self.store,self.memory,self.messages)
+        self.runtime_db=RuntimeDatabase(root/"runtime.db")
+        self.runtime_policy=PolicyEngine(self.runtime_db,root)
+        self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.runtime_policy)
         self.needs=NeedEngine(self)
         self.treasury=Treasury(self.store)
         self.resources=ResourceLedger(root/"resources.json")
@@ -98,7 +102,7 @@ class GenesisAgent:
             "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
             "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
             "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),
+            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"runtime":self.runtime_db.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
@@ -170,9 +174,12 @@ class GenesisAgent:
     def tick(self):
         self.tasks.unblock(); cid,title,project=self.decide(); created=None
         if cid:
+            self.runtime_db.event("decision",{"capability":cid,"title":title},actor="genesis-1")
             task=self.tasks.create("genesis-1","genesis",title,95,cid,project.id); self.projects.attach_task(project.id,task.id); created=task; self.store.event("genesis_decision",{"capability":cid,"title":title,"project_id":project.id})
         executed=[]
         for a in self.agents.snapshot():
             task=self.tasks.start_next(a["id"])
-            if task: executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
+            if task:
+                self.runtime_db.event("task_started",{"task_id":task.id,"capability":task.capability_id},actor=a["id"])
+                executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
         self.world.sync(self); result=self.snapshot(); result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}; result["created_task"]=created.id if created else None; result["execution"]=executed; return result
