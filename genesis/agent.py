@@ -20,37 +20,9 @@ from .soul import SoulStore
 from .treasury import Treasury
 from .resources import ResourceLedger
 
-class NeedEngine:
-    """Derives the next missing capability from persistent runtime state."""
-    def __init__(self, agent):
-        self.agent=agent
-    def detect(self):
-        a=self.agent
-        memories=a.memory.snapshot()
-        caps={x["id"]:x for x in a.capabilities.snapshot()}
-        offers=a.commerce.snapshot()["offers"]
-        agents=a.agents.snapshot()
-        skills=a.skills.snapshot()
-        active=lambda cid: caps.get(cid,{}).get("state")=="aktiv"
-        needs=[]
-        if not memories:
-            return [{"capability":"observe_environment","title":"Umgebung beobachten","reason":"Reale Zustands- und Evidenzdaten fehlen.","urgency":100,"prerequisites":[]}]
-        if not active("goal_decomposition"):
-            needs.append({"capability":"goal_decomposition","title":"Ziel in ausführbare Schritte zerlegen","reason":"Die Mission benötigt eine überprüfbare nächste Handlung.","urgency":95,"prerequisites":["observe_environment"]})
-        if active("goal_decomposition") and len(agents)==1 and not active("agent_creation"):
-            needs.append({"capability":"agent_creation","title":"Arbeitsfähigkeit durch Spezialisierung erweitern","reason":"Der Seed-Agent ist ein Single Point of Execution.","urgency":85,"prerequisites":["goal_decomposition"]})
-        if not offers:
-            needs.append({"capability":"offer_creation","title":"Erstes lieferbares Ergebnis erzeugen","reason":"Noch kein verwertbares Ergebnis existiert.","urgency":80,"prerequisites":["goal_decomposition"]})
-        if offers and not any("research" in x["purpose"].lower() for x in agents):
-            needs.append({"capability":"specialist_research","title":"Evidenz- und Marktbeobachtung spezialisieren","reason":"Angebotsentscheidungen brauchen externe Evidenz.","urgency":70,"prerequisites":["agent_creation"]})
-        if not skills:
-            needs.append({"capability":"skill_creation","title":"Verifiziertes Verfahren als Skill speichern","reason":"Wiederholbare Arbeit sollte als prozedurales Wissen erhalten bleiben.","urgency":60,"prerequisites":["agent_creation"]})
-        if not active("self_testing"):
-            needs.append({"capability":"self_testing","title":"Eigenen Zustand reproduzierbar prüfen","reason":"Neue Fähigkeiten benötigen ausführbare Evidenz.","urgency":90,"prerequisites":["skill_creation"]})
-        if offers and any(x.get("configured") for x in a.connectors.snapshot()) and not any(x.get("published_url") for x in offers):
-            needs.append({"capability":"external_publishing","title":"Angebot über echten Anschluss veröffentlichen","reason":"Ein konfigurierter externer Kanal existiert.","urgency":75,"prerequisites":["offer_creation"]})
-        return sorted(needs,key=lambda x:(-x["urgency"],x["capability"]))
-
+from .needs import NeedEngine
+from .constitution import Constitution
+from .policy import PolicyEngine
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice","service",0,120,3,.45,.65),
     Opportunity("digital_microproduct","digital_product",0,49,4,.35,.85),
@@ -65,6 +37,7 @@ class GenesisAgent:
     def __init__(self, store=None, policy=None):
         self.store=store or StateStore()
         self.policy=policy or SurvivalPolicy()
+        self.constitution=Constitution()
         self.economy=Economy(self.store)
         root=self.store.path.parent
         self.company=CompanyProfile()
@@ -83,6 +56,8 @@ class GenesisAgent:
         self.needs=NeedEngine(self)
         self.treasury=Treasury(self.store)
         self.resources=ResourceLedger(root/"resources.json")
+        self.execution_policy=PolicyEngine(self.store,self.constitution,self.treasury,self.resources)
+        self.tools.policy=self.execution_policy
         self.skills=SkillRegistry(root/"skills.json")
         self.soul=SoulStore(root/"soul.json")
         self.soul.ensure(self.company.mission)
@@ -111,6 +86,8 @@ class GenesisAgent:
             "world":self.world.snapshot(self),
             "treasury":self.treasury.snapshot(),
             "resources":self.resources.snapshot(),
+            "constitution":self.constitution.snapshot(),
+            "policy_audit":str(self.execution_policy.audit_path),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
