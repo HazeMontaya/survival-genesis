@@ -23,8 +23,15 @@ class WorldModel:
   for x in a.capabilities.snapshot():self.ensure("cap:"+x["id"],"capability",x["name"],x.get("owner_agent",""),x["description"])
   for x in a.projects.snapshot():self.ensure("project:"+x["id"],"project",x["title"],x.get("owner_agent",""),x["goal"])
   for x in a.tasks.snapshot():self.ensure("task:"+x["id"],"task",x["title"],x.get("agent",""),x.get("error",""))
+  for w in a.workflows.snapshot():
+   self.ensure("workflow:"+w["id"],"workflow",w["title"],reason=w.get("goal",""))
+   self.relate("genesis-core","workflow:"+w["id"],"production_line")
+   for s in w.get("stages",[]):
+    sid="stage:"+s["id"];self.ensure(sid,"stage",s["name"],s.get("agent_id",""),s.get("status",""))
+    self.relate("workflow:"+w["id"],sid,"contains_stage")
+    if s.get("task_id"):self.relate(sid,"task:"+s["task_id"],"executes")
   for x in a.artifacts.snapshot():self.ensure("artifact:"+x["id"],"artifact",x["title"],reason=x.get("status",""))
   for x in a.skills.snapshot():self.ensure("skill:"+x["id"],"skill",x["name"],reason=x["purpose"])
   for x in a.tools.snapshot():self.ensure("tool:"+x["id"],"tool",x["id"],reason=x["description"])
   self._save();return self.snapshot()
- def snapshot(self):return {"entities":[asdict(x) for x in self.entities[-1500:]],"relations":[asdict(x) for x in self.relations[-3000:]],"counts":{"entities":len(self.entities),"relations":len(self.relations),"agents":sum(x.type=="agent" for x in self.entities),"capabilities":sum(x.type=="capability" for x in self.entities),"projects":sum(x.type=="project" for x in self.entities),"tasks":sum(x.type=="task" for x in self.entities)}}
+ def snapshot(self):return {"entities":[asdict(x) for x in self.entities[-1500:]],"relations":[asdict(x) for x in self.relations[-3000:]],"counts":{"entities":len(self.entities),"relations":len(self.relations),"agents":sum(x.type=="agent" for x in self.entities),"capabilities":sum(x.type=="capability" for x in self.entities),"projects":sum(x.type=="project" for x in self.entities),"tasks":sum(x.type=="task" for x in self.entities),"workflows":sum(x.type=="workflow" for x in self.entities),"stages":sum(x.type=="stage" for x in self.entities)}}
