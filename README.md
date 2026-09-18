@@ -26,7 +26,7 @@ To run without activating the environment:
 
 ## Operational state
 
-The interactive company world is backed by the actual Python runtime. The SVG world is a projection of persisted runtime state, not a separate simulation. The runtime persists the economic ledger, append-only events, task queue, memory graph and locally generated artifacts under `workspace/`.
+The interactive Genesis world is backed by the actual Python runtime. The initial world is intentionally minimal: one Genesis agent and the runtime substrate. Organizational structures are not pre-created; they emerge from decisions and verified work. The SVG world is a projection of persisted runtime state, not a separate simulation. The runtime persists the economic ledger, append-only events, task queue, memory graph and locally generated artifacts under `workspace/`.
 
 Implemented:
 - persistent economic ledger and audit event log
@@ -35,8 +35,8 @@ Implemented:
 - local artifact factory producing reviewable Markdown assets
 - zero-capital opportunity ranking and experiment loop
 - live state API and autonomous 8-second runtime
-- persistent self-diagnosis of missing capabilities and world growth
-- SVG company world that grows from real agents, tasks, artifacts, connectors and capability gaps
+- seed-agent Genesis runtime that derives goals, creates capabilities, projects and child agents from actual state\n- dependency-aware task lifecycle with retries and verification\n- persistent emergent scene graph: the world starts with only the Genesis core and grows from real entities and relations
+- SVG Genesis world with no prebuilt departments: agents, projects, capabilities, tasks, artifacts and connectors become visible only after they exist in runtime state
 - manual cycle, start and stop controls
 - honest revenue accounting: unverified revenue is rejected
 - financial execution and trading disabled by default
@@ -55,4 +55,4 @@ The system must not spam, impersonate, defraud, evade platform controls, manipul
 
 ## Repository status
 
-The project contains the economic kernel, persistent operating state, company/room/agent topology, autonomous local execution loop, artifact pipeline, live control server, immersive dashboard and tests. Real provider integrations are the next external-execution layer and are deliberately gated rather than faked.
+The project contains the economic kernel, persistent operating state, seed-agent runtime, emergent capability/project/agent graph, dependency-aware task execution, artifact pipeline, live control server, immersive SVG world and tests. Real provider integrations are the next external-execution layer and are deliberately gated rather than faked.
