@@ -1,10 +1,10 @@
-from dataclasses import dataclass,asdict
+from dataclasses import dataclass,asdict,field
 from datetime import datetime,timezone
 from pathlib import Path
 import json, uuid
 @dataclass
 class Memory:
-    id:str; kind:str; content:str; confidence:float=1.0; created_at:str=""; uses:int=0; links:list[str]=None; status:str="alive"
+    id:str; kind:str; content:str; confidence:float=1.0; created_at:str=""; uses:int=0; links:list[str]=field(default_factory=list); status:str="alive"
 class MemoryGraph:
     def __init__(self,path="workspace/memory.json"):
         self.path=Path(path); self.items=[]; self._load()
