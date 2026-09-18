@@ -199,4 +199,4 @@ class GenesisAgent:
             if task:
                 self.runtime_db.event("task_started",{"task_id":task.id,"capability":task.capability_id},actor=a["id"])
                 executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
-        self.world.sync(self); result=self.snapshot(); result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}; result["created_task"]=created.id if created else None; result["execution"]=executed; return result
+        self.world.sync(self); self.runtime_db.event("world_projection",{"entities":len(self.world.entities),"relations":len(self.world.relations)},actor="system"); result=self.snapshot(); result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}; result["created_task"]=created.id if created else None; result["execution"]=executed; return result
