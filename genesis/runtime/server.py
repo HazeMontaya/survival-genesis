@@ -25,7 +25,7 @@ class Handler(BaseHTTPRequestHandler):
   if self.path=="/api/runtime/start":runtime.start();return self.send_json({"running":True})
   if self.path=="/api/runtime/stop":runtime.stop();return self.send_json({"running":False})
   if self.path=="/api/revenue/verified":
-   n=int(self.headers.get("Content-Length","0"));data=json.loads(self.rfile.read(n) or b"{}");sig=self.headers.get("X-Genesis-Signature","");body=f"{data["event_id"]}|{data.get("source","webhook")}|{float(data["amount_eur"]):.2f}".encode();secret=__import__("os").getenv("GENESIS_REVENUE_WEBHOOK_SECRET","")
+   n=int(self.headers.get("Content-Length","0"));data=json.loads(self.rfile.read(n) or b"{}");sig=self.headers.get("X-Genesis-Signature","");body=f'{data["event_id"]}|{data.get("source","webhook")}|{float(data["amount_eur"]):.2f}'.encode();secret=__import__("os").getenv("GENESIS_REVENUE_WEBHOOK_SECRET","")
    if not secret or not hmac.compare_digest(sig,hmac.new(secret.encode(),body,hashlib.sha256).hexdigest()):return self.send_json({"error":"invalid revenue signature"},403)
    try:return self.send_json({"accepted":True,"ledger":runtime.agent.treasury.accept_signed_revenue(str(data["event_id"]),str(data.get("source","webhook")),float(data["amount_eur"]),sig).__dict__})
    except Exception as e:return self.send_json({"error":str(e)},403)
