@@ -15,6 +15,10 @@ class TreasuryPolicy:
     trading_mode: str = "paper"
     max_payout_eur: float = 0.0
     require_human_approval_above_eur: float = 0.0
+    daily_payout_limit_eur: float = 0.0
+    daily_trade_notional_eur: float = 0.0
+    minimum_cash_reserve_eur: float = 0.0
+    allowed_payout_hashes: list[str] = field(default_factory=list)
 
 @dataclass
 class TreasuryAccount:
@@ -38,6 +42,10 @@ class Treasury:
             trading_mode=os.getenv("GENESIS_TRADING_MODE","paper"),
             max_payout_eur=float(os.getenv("GENESIS_MAX_PAYOUT_EUR","0")),
             require_human_approval_above_eur=float(os.getenv("GENESIS_HUMAN_APPROVAL_EUR","0")),
+            daily_payout_limit_eur=float(os.getenv("GENESIS_DAILY_PAYOUT_LIMIT_EUR","0")),
+            daily_trade_notional_eur=float(os.getenv("GENESIS_DAILY_TRADE_NOTIONAL_EUR","0")),
+            minimum_cash_reserve_eur=float(os.getenv("GENESIS_MIN_CASH_RESERVE_EUR","0")),
+            allowed_payout_hashes=[x for x in os.getenv("GENESIS_ALLOWED_PAYOUT_HASHES","").split(",") if x],
         )
         if self.policy.trading_mode not in ("paper","live"):
             raise ValueError("GENESIS_TRADING_MODE must be paper or live")
@@ -91,15 +99,24 @@ class Treasury:
         self.store.event("treasury_revenue_verified",{"event_id":event_id,"source":source,"amount_eur":amount_eur})
         return ledger
 
-    def can_payout(self,amount_eur,human_approved=False):
+    def payout_destination_allowed(self,destination):
+        return bool(destination and self.policy.allowed_payout_hashes and self.fingerprint(self.account.provider if self.account else "",str(destination)) in self.policy.allowed_payout_hashes)
+
+    def can_payout(self,amount_eur,human_approved=False,destination=None,current_cash_eur=0.0,today_payout_eur=0.0):
         if amount_eur<=0 or not self.policy.enabled or not self.policy.payout_enabled: return False
         if not self.account or not self.account.verified: return False
         if self.policy.max_payout_eur<=0 or amount_eur>self.policy.max_payout_eur: return False
+        if self.policy.daily_payout_limit_eur<=0 or today_payout_eur+amount_eur>self.policy.daily_payout_limit_eur: return False
+        if current_cash_eur-amount_eur<self.policy.minimum_cash_reserve_eur: return False
+        if not self.payout_destination_allowed(destination): return False
         if amount_eur>self.policy.require_human_approval_above_eur and not human_approved: return False
         return True
 
-    def can_trade(self):
-        return bool(self.policy.enabled and self.policy.trading_enabled and self.account and self.account.verified and self.policy.trading_mode=="live")
+    def can_trade(self,notional_eur=0.0,today_notional_eur=0.0,current_cash_eur=0.0):
+        if not (self.policy.enabled and self.policy.trading_enabled and self.account and self.account.verified and self.policy.trading_mode=="live"): return False
+        if notional_eur<=0 or self.policy.daily_trade_notional_eur<=0: return False
+        if today_notional_eur+notional_eur>self.policy.daily_trade_notional_eur: return False
+        return current_cash_eur>=self.policy.minimum_cash_reserve_eur+notional_eur
 
     def snapshot(self):
         return {"policy":asdict(self.policy),"account":asdict(self.account) if self.account else None,"secret_material_stored":False}
