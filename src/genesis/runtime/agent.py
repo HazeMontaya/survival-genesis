@@ -236,6 +236,8 @@ class GenesisAgent:
                 self.agents.set_activity(a["id"], "processing", task.room)
                 self.runtime_db.event("task_started", {"task_id": task.id, "agent_id": a["id"], "room": task.room}, actor=a["id"])
                 result = self.execute(task)
+                for workflow in self.workflows.snapshot():
+                    self.workflows.sync(workflow["id"], self.tasks.snapshot())
                 inbox = self.messages.inbox(a["id"], mark_delivered=True)
                 if inbox:
                     self.agents.set_activity(a["id"], "collaborating", task.room)
