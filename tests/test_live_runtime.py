@@ -48,3 +48,23 @@ def test_world_contract():
     assert "<svg" in html
     assert "/api/state" in html
     assert "world.entities" in html
+
+
+def test_need_engine_and_real_tool_handlers(tmp_path):
+    store=StateStore(tmp_path/"state.json")
+    a=GenesisAgent(store=store)
+    assert a.needs.detect()[0]["capability"]=="observe_environment"
+    a.memory.remember("observation","test observation",0.9)
+    a.tools.call("remember",kind="observation",content="tool observation",confidence=0.9)
+    assert any(x["content"]=="tool observation" for x in a.memory.snapshot())
+    child=a.agents.spawn("Helper","test", "genesis-1", [], ["send_message"])
+    result=a.tools.call("send_message",sender="genesis-1",recipient=child.id,content="hello",kind="task")
+    assert result["sent"]
+    assert a.messages.inbox(child.id)
+
+def test_no_fake_revenue_on_bootstrap(tmp_path):
+    store=StateStore(tmp_path/"state.json")
+    a=GenesisAgent(store=store)
+    for _ in range(4): a.tick()
+    assert a.store.load().earned_eur==0
+    assert a.store.load().cash_eur==0
