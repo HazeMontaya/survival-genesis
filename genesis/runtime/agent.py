@@ -47,7 +47,8 @@ class GenesisAgent:
   executed=[]
   for a in self.agents.snapshot():
    t=self.tasks.start_next(a["id"])
-   if not t:continue
+   if not t:self.agents.set_activity(a["id"],"idle");continue
+   self.agents.set_activity(a["id"],"working")
    self.capabilities.transition(t.capability_id,"in_entwicklung")
    try:
     if t.capability_id=="observe_environment":e=self.signals.scan(DEFAULT_OPPORTUNITIES[0]);self.memory.remember("observation",e["summary"],.8)
@@ -57,6 +58,6 @@ class GenesisAgent:
     elif t.capability_id=="skill_creation":e={"type":"skill_created","skill_id":self.skills.create("research_basics","Recherche-Grundlagen","Belege prüfen","Quelle → Signal → Unsicherheit → speichern.").id}
     elif t.capability_id=="self_testing":e=self.tools.call("run_tests")
     else:e={"verified":True}
-    self.tasks.complete(t.id,e,"verifiziert");self.capabilities.transition(t.capability_id,"getestet",e);self.capabilities.transition(t.capability_id,"verifiziert",e);self.capabilities.transition(t.capability_id,"aktiv",e);self.agents.assign_capability(t.agent,t.capability_id);self.db.event("task_completed",{"task_id":t.id,"capability":t.capability_id},"genesis-1");executed.append({"task_id":t.id,"agent":t.agent,"result":e})
-   except Exception as exc:self.tasks.fail(t.id,str(exc));self.capabilities.transition(t.capability_id,"fehlgeschlagen",{"error":str(exc)});self.db.event("task_failed",{"task_id":t.id,"error":str(exc)},"genesis-1");executed.append({"task_id":t.id,"agent":t.agent,"result":{"error":str(exc)}})
+    self.tasks.complete(t.id,e,"verifiziert");self.agents.set_activity(t.agent,"completed")self.capabilities.transition(t.capability_id,"getestet",e);self.capabilities.transition(t.capability_id,"verifiziert",e);self.capabilities.transition(t.capability_id,"aktiv",e);self.agents.assign_capability(t.agent,t.capability_id);self.db.event("task_completed",{"task_id":t.id,"capability":t.capability_id},"genesis-1");executed.append({"task_id":t.id,"agent":t.agent,"result":e})
+   except Exception as exc:self.tasks.fail(t.id,str(exc));self.agents.set_activity(t.agent,"error");self.capabilities.transition(t.capability_id,"fehlgeschlagen",{"error":str(exc)});self.db.event("task_failed",{"task_id":t.id,"error":str(exc)},"genesis-1");executed.append({"task_id":t.id,"agent":t.agent,"result":{"error":str(exc)}})
   self.workflows.sync(self.projects.items,self.tasks.snapshot());s=self.snapshot();s["decision"]=need;s["created_task"]=created.id if created else None;s["execution"]=executed;return s
