@@ -82,3 +82,45 @@ The runtime is aligned with useful documented mechanisms from Conway Research's 
 ## Forbidden regression
 
 Do not reintroduce the previous HUD, toolbar, inspector styling, dashboard KPI grid, decorative simulated entities, hard-coded world objects, fake activity indicators or visual claims unsupported by backend state.
+
+## Agent World v2
+
+The product experience now uses two synchronized visual layers.
+
+### Physical layer
+
+The world is spatially organized into runtime-derived rooms:
+- **Core** — Genesis and orchestration.
+- **Intelligence** — research, scouting and analysis.
+- **Knowledge** — memory, skills and evidence.
+- **Production** — artifacts, projects and outputs.
+- **Quality** — review and verification.
+- **Factory** — executable tools and workflows.
+- **Gateway** — configured external connectors.
+- **Commerce** — offers and real orders.
+
+Agents have runtime-derived visual states such as `idle`, `searching`, `working` and `reviewing`. These are projections of active tasks and capabilities, not cosmetic character traits.
+
+Tasks are rendered as work objects. A task exists visually only when it exists in the persisted task board.
+
+### Neural layer
+
+Pressing **N** switches between the physical world and a relationship-oriented neural projection.
+
+The neural layer exposes persisted relations and their intensity. It is not a fabricated neural network. A stronger line means the runtime has recorded a stronger relation; it does not imply intelligence or quality.
+
+### Knowledge garden
+
+Evidence and skills live in the Knowledge room. Evidence status is rendered from the evidence ledger (`observed`, `verified`, `rejected`). Verification is a runtime trust boundary.
+
+### Temporal/audit principle
+
+The runtime journal remains the source for factual history. Future timeline controls must replay recorded events rather than regenerate a simulated past.
+
+### Animation rule
+
+Animation communicates state transitions or active work. Idle entities remain visually quiet. Decorative motion must not imply work, revenue, communication or success that the runtime did not record.
+
+### Control rule
+
+The browser remains a projection layer. Commands that can change runtime state must cross the backend policy boundary. Source-code evolution is a controlled change-management operation, not an unrestricted browser file write.
