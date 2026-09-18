@@ -138,7 +138,15 @@ class GenesisAgent:
                 child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
                 self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.", "onboarding")
                 self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
-                evidence={"type":"agent_created","agent_id":child.id}
+                self._capability("research_observation","Recherche beobachten","Externe Signale erfassen und als Evidenz speichern.",child.id)
+                child_task=self.tasks.create(child.id,"research","Führe eine Recherchebeobachtung durch",70,"research_observation","")
+                self.messages.send(task.agent,child.id,"Arbeitsauftrag: Führe die Recherchebeobachtung aus und melde Evidenz.","task")
+                evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id}
+            elif task.capability_id=="research_observation":
+                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0])
+                self.memory.remember("research",signal["summary"],signal["score"])
+                self.messages.send(task.agent,"genesis-1",signal["summary"],"result")
+                evidence={"type":"research_observation","signal":signal}
             elif task.capability_id=="offer_creation":
                 choice=rank(DEFAULT_OPPORTUNITIES)[0]
                 offer=self.commerce.create_offer(choice)
@@ -186,9 +194,11 @@ class GenesisAgent:
             self.projects.attach_task(project.id,task.id)
             created=task
             self.store.event("genesis_decision",{"capability":cid,"title":title,"project_id":project.id})
-        executed=None
-        task=self.tasks.start_next("genesis-1")
-        if task: executed=self._execute(task)
+        executed=[]
+        for a in self.agents.snapshot():
+            task=self.tasks.start_next(a["id"])
+            if task:
+                executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
         self.world.sync(self)
         result=self.snapshot()
         result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}
