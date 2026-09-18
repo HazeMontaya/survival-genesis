@@ -24,6 +24,7 @@ from genesis.runtime.database import RuntimeDatabase
 from genesis.runtime.policy import PolicyEngine
 from genesis.runtime.evolution import EvolutionManager
 from genesis.core.resources import ResourceLedger
+from genesis.domain.workflows import WorkflowEngine
 
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice", "service", 0, 120, 3, .45, .65),
@@ -96,6 +97,7 @@ class GenesisAgent:
         self.soul = SoulStore(root / "soul.json")
         self.soul.ensure(self.company.mission)
         self.world = WorldModel()
+        self.workflows = WorkflowEngine(root / "workflows.json")
 
     def snapshot(self):
         ledger = self.store.load()
@@ -122,6 +124,7 @@ class GenesisAgent:
             "resources": self.resources.snapshot(),
             "evidence": self.evidence.snapshot(),
             "orders": self.orders.snapshot(),
+            "workflows": self.workflows.snapshot(),
             "evolution": self.evolution.snapshot(),
             "runtime": self.runtime_db.snapshot(),
             "top_opportunities": [{"name": x.name, "channel": x.channel, "score": round(x.score(), 3)} for x in rank(DEFAULT_OPPORTUNITIES)],
@@ -156,6 +159,7 @@ class GenesisAgent:
         project = self._project(cid, title, f"Capability zur Erfüllung der Mission: {title}")
         task = self.tasks.create("genesis-1", "genesis", title, 95, cid, project.id)
         self.projects.attach_task(project.id, task.id)
+        self.workflows.ensure_for_project(project, self.tasks.snapshot())
         self.runtime_db.event("decision", {"capability": cid, "task_id": task.id}, actor="genesis-1")
         return task
 
@@ -238,6 +242,8 @@ class GenesisAgent:
                 self.runtime_db.event("task_completed" if final_activity == "completed" else "task_failed", {"task_id": task.id, "agent_id": a["id"], "evidence_id": result.get("evidence_id", "")}, actor=a["id"])
                 self.agents.set_activity(a["id"], "idle", "core")
                 executed.append({"task_id": task.id, "agent": a["id"], "result": result})
+        for workflow in self.workflows.snapshot():
+            self.workflows.sync(workflow["id"], self.tasks.snapshot())
         self.world.project(self)
         self.runtime_db.event("world_tick", {"entities": len(self.world.entities), "relations": len(self.world.relations)}, actor="system")
         result = self.snapshot()
