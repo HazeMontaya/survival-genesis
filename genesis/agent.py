@@ -17,6 +17,7 @@ from .social import MessageBus
 from .tools import ToolRegistry
 from .skills import SkillRegistry
 from .soul import SoulStore
+from .treasury import Treasury
 
 class NeedEngine:
     """Derives the next missing capability from persistent runtime state."""
@@ -79,6 +80,7 @@ class GenesisAgent:
         self.messages=MessageBus(root/"messages.json")
         self.tools=ToolRegistry(root,self.store,self.memory,self.messages)
         self.needs=NeedEngine(self)
+        self.treasury=Treasury(self.store)
         self.skills=SkillRegistry(root/"skills.json")
         self.soul=SoulStore(root/"soul.json")
         self.soul.ensure(self.company.mission)
@@ -105,6 +107,7 @@ class GenesisAgent:
             "skills":self.skills.snapshot(),
             "soul":self.soul.snapshot(),
             "world":self.world.snapshot(self),
+            "treasury":self.treasury.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
