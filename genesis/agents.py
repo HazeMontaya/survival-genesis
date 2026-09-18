@@ -31,7 +31,16 @@ class AgentDirectory:
         self.path.write_text(json.dumps([asdict(x) for x in self.items[-500:]],indent=2,ensure_ascii=False),encoding="utf-8")
 
     def ensure_genesis(self):
-        if self.items: return self.items[0]
+        if self.items:
+            a=self.items[0]
+            required=["read_file","write_file","list_files","run_tests","run_python","remember","send_message"]
+            changed=False
+            for tool in required:
+                if tool not in a.tool_ids: a.tool_ids.append(tool); changed=True
+            if changed:
+                a.updated_at=datetime.now(timezone.utc).isoformat()
+                self._save()
+            return a
         now=datetime.now(timezone.utc).isoformat()
         a=AgentRecord("genesis-1","Genesis","Verstehe das Ziel, sichere die eigene Existenz und baue die fehlende Umgebung auf.", "", "alive", [], ["read_file","write_file","list_files","run_tests","run_python","remember","send_message"], "global", 0, now, now)
         self.items.append(a); self._save(); return a
