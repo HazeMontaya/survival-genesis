@@ -19,10 +19,6 @@ class TreasuryPolicy:
     daily_trade_notional_eur: float = 0.0
     minimum_cash_reserve_eur: float = 0.0
     allowed_payout_hashes: list[str] = field(default_factory=list)
-    daily_payout_limit_eur: float = 0.0
-    daily_trade_notional_eur: float = 0.0
-    minimum_cash_reserve_eur: float = 0.0
-    allowed_payout_hashes: list[str] = field(default_factory=list)
 
 @dataclass
 class TreasuryAccount:
@@ -46,10 +42,6 @@ class Treasury:
             trading_mode=os.getenv("GENESIS_TRADING_MODE","paper"),
             max_payout_eur=float(os.getenv("GENESIS_MAX_PAYOUT_EUR","0")),
             require_human_approval_above_eur=float(os.getenv("GENESIS_HUMAN_APPROVAL_EUR","0")),
-            daily_payout_limit_eur=float(os.getenv("GENESIS_DAILY_PAYOUT_LIMIT_EUR","0")),
-            daily_trade_notional_eur=float(os.getenv("GENESIS_DAILY_TRADE_NOTIONAL_EUR","0")),
-            minimum_cash_reserve_eur=float(os.getenv("GENESIS_MIN_CASH_RESERVE_EUR","0")),
-            allowed_payout_hashes=[x for x in os.getenv("GENESIS_ALLOWED_PAYOUT_HASHES","").split(",") if x],
             daily_payout_limit_eur=float(os.getenv("GENESIS_DAILY_PAYOUT_LIMIT_EUR","0")),
             daily_trade_notional_eur=float(os.getenv("GENESIS_DAILY_TRADE_NOTIONAL_EUR","0")),
             minimum_cash_reserve_eur=float(os.getenv("GENESIS_MIN_CASH_RESERVE_EUR","0")),
@@ -114,9 +106,6 @@ class Treasury:
         if amount_eur<=0 or not self.policy.enabled or not self.policy.payout_enabled: return False
         if not self.account or not self.account.verified: return False
         if self.policy.max_payout_eur<=0 or amount_eur>self.policy.max_payout_eur: return False
-        if self.policy.daily_payout_limit_eur<=0 or today_payout_eur+amount_eur>self.policy.daily_payout_limit_eur: return False
-        if current_cash_eur-amount_eur<self.policy.minimum_cash_reserve_eur: return False
-        if not self.payout_destination_allowed(destination): return False
         if self.policy.daily_payout_limit_eur<=0 or today_payout_eur+amount_eur>self.policy.daily_payout_limit_eur: return False
         if current_cash_eur-amount_eur<self.policy.minimum_cash_reserve_eur: return False
         if not self.payout_destination_allowed(destination): return False
