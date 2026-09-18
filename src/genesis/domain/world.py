@@ -94,6 +94,7 @@ class WorldModel:
         evidence = agent.evidence.snapshot()
         orders = agent.orders.snapshot()
         messages = agent.messages.snapshot()
+        memories = agent.memory.snapshot()
         offers = agent.commerce.snapshot().get("offers", [])
         entities: list[WorldEntity] = []
         relations: list[WorldRelation] = []
@@ -145,6 +146,18 @@ class WorldModel:
             oid = f"offer:{o['id']}"
             add(WorldEntity(oid, "output", o.get("title", "Offer"), room="output",
                             visual_state="ready", x=50, y=88, size=0.9, reason=o.get("description", "")))
+        for m in memories[-100:]:
+            mid = "memory:" + m["id"]
+            x, y = self._pos(mid, "knowledge", memories.index(m), max(1, len(memories)))
+            add(WorldEntity(mid, "memory", m["kind"], room="knowledge",
+                            visual_state=m.get("status", "alive"), x=x, y=y,
+                            size=min(1.1, .45 + min(8, m.get("uses", 0)) * .08),
+                            reason=m.get("content", ""), created_at=m.get("created_at", "")))
+            for target in m.get("links", []):
+                if any(item["id"] == target for item in memories):
+                    relations.append(WorldRelation("memory-link:" + m["id"] + ":" + target,
+                                                    mid, "memory:" + target, "knowledge_link",
+                                                    min(4.0, 1 + m.get("uses", 0) / 3)))
         for e in evidence[-80:]:
             eid = f"evidence:{e['id']}"
             add(WorldEntity(eid, "evidence", e["kind"], owner_id=e.get("subject_id", ""),
@@ -174,6 +187,10 @@ class WorldModel:
             "entities": len(self.entities),
             "relations": len(self.relations),
         }]
+        self.gaps = []
+        if not memories: self.gaps.append({"name": "Knowledge Garden empty", "reason": "No persistent observations or memories exist yet."})
+        if len(agents) == 1: self.gaps.append({"name": "Genesis alone", "reason": "No specialist agent has been created."})
+        if not offers: self.gaps.append({"name": "No output", "reason": "No deliverable offer exists yet."})
         return self.snapshot(agent)
 
     def sync(self, agent):
@@ -190,5 +207,6 @@ class WorldModel:
             "events": self.events[-50:],
             "counts": counts,
             "rooms": [{"id": k, "x": v[0], "y": v[1]} for k, v in self.ROOMS.items()],
-            "layers": {"physical": True, "neural": True, "economic": True},
+            "layers": {"physical": True, "neural": True, "economic": True, "knowledge": True},
+            "gaps": self.gaps,
         }
