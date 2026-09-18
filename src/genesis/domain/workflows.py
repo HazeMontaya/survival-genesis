@@ -69,6 +69,20 @@ class WorkflowEngine:
         self._save()
         return self.sync(workflow.id, tasks)
 
+    def ensure_stage(self, workflow_id, name, kind, task_id="", agent_id=""):
+        workflow = self.get(workflow_id)
+        if not workflow:
+            raise KeyError(workflow_id)
+        existing = next((s for s in workflow.stages if s.task_id == task_id and task_id), None)
+        if existing:
+            return existing
+        now = datetime.now(timezone.utc).isoformat()
+        stage = WorkflowStage(uuid.uuid4().hex[:10], name, kind, task_id, "queued", agent_id, [], now, now)
+        workflow.stages.append(stage)
+        workflow.updated_at = now
+        self._save()
+        return stage
+
     def sync(self, workflow_id, tasks):
         workflow = self.get(workflow_id)
         if not workflow:
