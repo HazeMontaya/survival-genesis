@@ -18,6 +18,37 @@ from .tools import ToolRegistry
 from .skills import SkillRegistry
 from .soul import SoulStore
 
+class NeedEngine:
+    """Derives the next missing capability from persistent runtime state."""
+    def __init__(self, agent):
+        self.agent=agent
+    def detect(self):
+        a=self.agent
+        memories=a.memory.snapshot()
+        caps={x["id"]:x for x in a.capabilities.snapshot()}
+        offers=a.commerce.snapshot()["offers"]
+        agents=a.agents.snapshot()
+        skills=a.skills.snapshot()
+        active=lambda cid: caps.get(cid,{}).get("state")=="aktiv"
+        needs=[]
+        if not memories:
+            return [{"capability":"observe_environment","title":"Umgebung beobachten","reason":"Reale Zustands- und Evidenzdaten fehlen.","urgency":100,"prerequisites":[]}]
+        if not active("goal_decomposition"):
+            needs.append({"capability":"goal_decomposition","title":"Ziel in ausführbare Schritte zerlegen","reason":"Die Mission benötigt eine überprüfbare nächste Handlung.","urgency":95,"prerequisites":["observe_environment"]})
+        if active("goal_decomposition") and len(agents)==1 and not active("agent_creation"):
+            needs.append({"capability":"agent_creation","title":"Arbeitsfähigkeit durch Spezialisierung erweitern","reason":"Der Seed-Agent ist ein Single Point of Execution.","urgency":85,"prerequisites":["goal_decomposition"]})
+        if not offers:
+            needs.append({"capability":"offer_creation","title":"Erstes lieferbares Ergebnis erzeugen","reason":"Noch kein verwertbares Ergebnis existiert.","urgency":80,"prerequisites":["goal_decomposition"]})
+        if offers and not any("research" in x["purpose"].lower() for x in agents):
+            needs.append({"capability":"specialist_research","title":"Evidenz- und Marktbeobachtung spezialisieren","reason":"Angebotsentscheidungen brauchen externe Evidenz.","urgency":70,"prerequisites":["agent_creation"]})
+        if not skills:
+            needs.append({"capability":"skill_creation","title":"Verifiziertes Verfahren als Skill speichern","reason":"Wiederholbare Arbeit sollte als prozedurales Wissen erhalten bleiben.","urgency":60,"prerequisites":["agent_creation"]})
+        if not active("self_testing"):
+            needs.append({"capability":"self_testing","title":"Eigenen Zustand reproduzierbar prüfen","reason":"Neue Fähigkeiten benötigen ausführbare Evidenz.","urgency":90,"prerequisites":["skill_creation"]})
+        if offers and any(x.get("configured") for x in a.connectors.snapshot()) and not any(x.get("published_url") for x in offers):
+            needs.append({"capability":"external_publishing","title":"Angebot über echten Anschluss veröffentlichen","reason":"Ein konfigurierter externer Kanal existiert.","urgency":75,"prerequisites":["offer_creation"]})
+        return sorted(needs,key=lambda x:(-x["urgency"],x["capability"]))
+
 DEFAULT_OPPORTUNITIES = [
     Opportunity("technical_microservice","service",0,120,3,.45,.65),
     Opportunity("digital_microproduct","digital_product",0,49,4,.35,.85),
@@ -46,7 +77,8 @@ class GenesisAgent:
         self.agents=AgentDirectory(root/"agents.json")
         self.agents.ensure_genesis()
         self.messages=MessageBus(root/"messages.json")
-        self.tools=ToolRegistry(root,self.store)
+        self.tools=ToolRegistry(root,self.store,self.memory,self.messages)
+        self.needs=NeedEngine(self)
         self.skills=SkillRegistry(root/"skills.json")
         self.soul=SoulStore(root/"soul.json")
         self.soul.ensure(self.company.mission)
@@ -87,41 +119,24 @@ class GenesisAgent:
         return self.projects.create(title,goal,owner,[cid])
 
     def decide(self):
-        """Deterministic seed planner: infer the next missing prerequisite from state."""
+        """Select the highest-priority unsatisfied need from live state."""
+        need=next(iter(self.needs.detect()),None)
+        if not need:
+            return None,None,None
+        cid=need["capability"]
         genesis=self.agents.get("genesis-1")
-        if not self.memory.snapshot():
-            cid="observe_environment"
-            self._capability(cid,"Umgebung beobachten","Zustand, Ressourcen und externe Signale erfassen.",genesis.id)
-            return cid,"Umgebung zuerst beobachten",self._project_for(cid,"Erste Beobachtung","Den realen Startzustand erfassen.")
-        if not self.capabilities.active("goal_decomposition"):
-            cid="goal_decomposition"
-            self._capability(cid,"Ziele zerlegen","Aus der Mission konkrete nächste Ziele und Abhängigkeiten ableiten.",genesis.id,["observe_environment"])
-            return cid,"Ziel in umsetzbare Schritte zerlegen",self._project_for(cid,"Zielzerlegung","Aus Beobachtungen einen ausführbaren nächsten Schritt bestimmen.")
-        if not self.capabilities.active("agent_creation"):
-            cid="agent_creation"
-            self._capability(cid,"Agenten erschaffen","Neue spezialisierte Agenten aus einem überprüfbaren Blueprint erzeugen.",genesis.id,["goal_decomposition"])
-            return cid,"Eigene Arbeitsfähigkeit erweitern",self._project_for(cid,"Agentenfabrik","Eine reproduzierbare Fähigkeit zum Erzeugen spezialisierter Agenten bauen.")
-        if not self.commerce.snapshot()["offers"]:
-            cid="offer_creation"
-            self._capability(cid,"Nützliche Angebote erzeugen","Ein überprüfbares, lieferbares und potenziell wertvolles Ergebnis erzeugen.",genesis.id)
-            return cid,"Erstes nützliches Ergebnis erzeugen",self._project_for(cid,"Erstes Angebot","Ein reales, lokal erfüllbares Angebot erzeugen.")
-        if not any(a["purpose"].lower().find("research")>=0 for a in self.agents.snapshot()):
-            cid="specialist_research"
-            self._capability(cid,"Spezialisierte Recherche","Markt- und Evidenzsignale systematisch untersuchen.","genesis-1")
-            return cid,"Recherche spezialisieren",self._project_for(cid,"Recherche-Spezialist","Einen Agenten für kontinuierliche Evidenzsuche erzeugen.")
-        if not self.skills.snapshot():
-            cid="skill_creation"
-            self._capability(cid,"Skills erschaffen","Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.","genesis-1",["agent_creation"])
-            return cid,"Wissen als wiederverwendbare Fähigkeit speichern",self._project_for(cid,"Skill-System","Eine erste wiederverwendbare Arbeitsmethode erzeugen.")
-        if not self.capabilities.active("self_testing"):
-            cid="self_testing"
-            self._capability(cid,"Selbsttests ausführen","Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.","genesis-1",["skill_creation"])
-            return cid,"Die eigene Arbeit verifizieren",self._project_for(cid,"Selbstprüfung","Tests ausführen und Evidenz für die Laufzeit erzeugen.")
-        if not any(x.get("published_url") for x in self.commerce.snapshot()["offers"]):
-            cid="external_publishing"
-            self._capability(cid,"Externe Veröffentlichung","Ein Angebot über einen ausdrücklich konfigurierten externen Kanal veröffentlichen.","genesis-1")
-            return cid,"Einen echten Veröffentlichungsweg aufbauen",self._project_for(cid,"Veröffentlichungsweg","Nur mit real konfiguriertem Anschluss veröffentlichen.")
-        return None,None,None
+        descriptions={
+            "observe_environment":"Zustand, Ressourcen und externe Signale erfassen.",
+            "goal_decomposition":"Aus der Mission konkrete Ziele und Abhängigkeiten ableiten.",
+            "agent_creation":"Neue spezialisierte Agenten aus einem überprüfbaren Blueprint erzeugen.",
+            "offer_creation":"Ein überprüfbares und lieferbares Ergebnis erzeugen.",
+            "specialist_research":"Markt- und Evidenzsignale systematisch untersuchen.",
+            "skill_creation":"Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.",
+            "self_testing":"Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.",
+            "external_publishing":"Ein Angebot über einen konfigurierten externen Kanal veröffentlichen.",
+        }
+        self._capability(cid,need["title"],descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
+        return cid,need["title"],self._project_for(cid,need["title"],need["reason"])
 
     def _execute(self,task):
         if task.capability_id:
@@ -176,7 +191,9 @@ class GenesisAgent:
                 self.agents.assign_capability(task.agent,task.capability_id)
                 self.soul.evolve(task.capability_id)
             if task.project_id:
-                self.projects.transition(task.project_id,"done",evidence)
+                project=self.projects.get(task.project_id)
+                all_done=bool(project and project.task_ids and all((self.tasks.get(tid) and self.tasks.get(tid).status=="done") for tid in project.task_ids))
+                self.projects.transition(task.project_id,"done" if all_done else "active",evidence)
             return evidence
         except Exception as exc:
             self.tasks.fail(task.id,str(exc))
