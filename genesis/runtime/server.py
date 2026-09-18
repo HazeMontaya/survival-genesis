@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from threading import Lock
 from pathlib import Path
 import json
+import hmac,hashlib
 from genesis.runtime.agent import GenesisAgent
 from genesis.runtime.heartbeat import HeartbeatDaemon
 ROOT=Path(__file__).resolve().parents[2];WORLD=ROOT/"world"/"index.html"
@@ -23,6 +24,11 @@ class Handler(BaseHTTPRequestHandler):
   if self.path=="/api/tick":return self.send_json(runtime.tick())
   if self.path=="/api/runtime/start":runtime.start();return self.send_json({"running":True})
   if self.path=="/api/runtime/stop":runtime.stop();return self.send_json({"running":False})
+  if self.path=="/api/revenue/verified":
+   n=int(self.headers.get("Content-Length","0"));data=json.loads(self.rfile.read(n) or b"{}");sig=self.headers.get("X-Genesis-Signature","");body=f"{data["event_id"]}|{data.get("source","webhook")}|{float(data["amount_eur"]):.2f}".encode();secret=__import__("os").getenv("GENESIS_REVENUE_WEBHOOK_SECRET","")
+   if not secret or not hmac.compare_digest(sig,hmac.new(secret.encode(),body,hashlib.sha256).hexdigest()):return self.send_json({"error":"invalid revenue signature"},403)
+   try:return self.send_json({"accepted":True,"ledger":runtime.agent.treasury.accept_signed_revenue(str(data["event_id"]),str(data.get("source","webhook")),float(data["amount_eur"]),sig).__dict__})
+   except Exception as e:return self.send_json({"error":str(e)},403)
   self.send_json({"error":"not_found"},404)
  def log_message(self,*a):pass
 def serve(host="127.0.0.1",port=8765):ThreadingHTTPServer((host,port),Handler).serve_forever()
