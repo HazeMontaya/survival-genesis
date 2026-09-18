@@ -23,14 +23,8 @@ from .resources import ResourceLedger
 from .needs import NeedEngine
 from .constitution import Constitution
 from .policy import PolicyEngine
-DEFAULT_OPPORTUNITIES = [
-    Opportunity("technical_microservice","service",0,120,3,.45,.65),
-    Opportunity("digital_microproduct","digital_product",0,49,4,.35,.85),
-    Opportunity("lead_generation","leads",0,100,4,.30,.75),
-    Opportunity("open_source_sponsorship","open_source",0,25,2,.15,.90),
-    Opportunity("affiliate_content","affiliate",0,60,5,.20,.70),
-    Opportunity("print_on_demand","pod",0,35,5,.15,.55),
-]
+from .executor import CapabilityExecutor
+from .catalog import DEFAULT_OPPORTUNITIES
 
 class GenesisAgent:
     """A minimal seed agent that derives work from the mission and actual runtime state."""
@@ -54,6 +48,7 @@ class GenesisAgent:
         self.messages=MessageBus(root/"messages.json")
         self.tools=ToolRegistry(root,self.store,self.memory,self.messages)
         self.needs=NeedEngine(self)
+        self.executor=CapabilityExecutor(self)
         self.treasury=Treasury(self.store)
         self.resources=ResourceLedger(root/"resources.json")
         self.execution_policy=PolicyEngine(self.store,self.constitution,self.treasury,self.resources)
@@ -126,47 +121,7 @@ class GenesisAgent:
         if task.capability_id:
             self.capabilities.transition(task.capability_id,"in_entwicklung")
         try:
-            if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0])
-                self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8)
-                evidence={"type":"observation","signal":signal}
-            elif task.capability_id=="goal_decomposition":
-                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9)
-                evidence={"type":"goal_decomposition","verified":True}
-            elif task.capability_id=="agent_creation":
-                child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
-                self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.", "onboarding")
-                self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
-                self._capability("research_observation","Recherche beobachten","Externe Signale erfassen und als Evidenz speichern.",child.id)
-                child_task=self.tasks.create(child.id,"research","Führe eine Recherchebeobachtung durch",70,"research_observation","")
-                self.messages.send(task.agent,child.id,"Arbeitsauftrag: Führe die Recherchebeobachtung aus und melde Evidenz.","task")
-                evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id}
-            elif task.capability_id=="research_observation":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0])
-                self.memory.remember("research",signal["summary"],signal["score"])
-                self.messages.send(task.agent,"genesis-1",signal["summary"],"result")
-                evidence={"type":"research_observation","signal":signal}
-            elif task.capability_id=="offer_creation":
-                choice=rank(DEFAULT_OPPORTUNITIES)[0]
-                offer=self.commerce.create_offer(choice)
-                evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"]}
-            elif task.capability_id=="specialist_research":
-                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"])
-                self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.", "onboarding")
-                evidence={"type":"agent_created","agent_id":child.id}
-            elif task.capability_id=="skill_creation":
-                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern.")
-                evidence={"type":"skill_created","skill_id":skill.id}
-            elif task.capability_id=="self_testing":
-                result=self.tools.call("run_tests")
-                if result["returncode"]!=0: raise RuntimeError(result["stderr"] or result["stdout"])
-                evidence={"type":"test_run","returncode":result["returncode"],"stdout":result["stdout"][-3000:]}
-            elif task.capability_id=="external_publishing":
-                configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
-                if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
-                evidence={"type":"connector_ready","verified":True}
-            else:
-                evidence={"type":"capability_step","verified":True}
+            evidence=self.executor.execute(task)
             self.tasks.complete(task.id,evidence=evidence,result="verifiziert")
             if task.capability_id:
                 self.capabilities.transition(task.capability_id,"getestet",evidence)
