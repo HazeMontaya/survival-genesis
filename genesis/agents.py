@@ -33,7 +33,7 @@ class AgentDirectory:
     def ensure_genesis(self):
         if self.items: return self.items[0]
         now=datetime.now(timezone.utc).isoformat()
-        a=AgentRecord("genesis-1","Genesis","Verstehe das Ziel, sichere die eigene Existenz und baue die fehlende Umgebung auf.", "", "alive", [], [], "global", 0, now, now)
+        a=AgentRecord("genesis-1","Genesis","Verstehe das Ziel, sichere die eigene Existenz und baue die fehlende Umgebung auf.", "", "alive", [], ["read_file","write_file","list_files","run_tests","run_python","remember","send_message"], "global", 0, now, now)
         self.items.append(a); self._save(); return a
 
     def spawn(self,name,purpose,parent_id,capabilities=None,tool_ids=None):
