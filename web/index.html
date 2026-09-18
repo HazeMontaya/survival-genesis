@@ -128,6 +128,11 @@ function layout(entities){
 }
 
 function select(e){selected=e;$("selection").style.display="block";$("feedPanel").style.display="none";$("selType").textContent=(e.type||"entity")+" / "+(e.state||"unknown");$("selName").textContent=e.name||e.id;$("selDesc").textContent=e.reason||"No additional description.";const vals={ID:e.id,Parent:e.parent_id||"—",Owner:e.owner_id||"—",Created:e.created_at||"—"};$("selData").innerHTML=Object.entries(vals).map(([k,v])=>"<span>"+esc(k)+"</span><b>"+esc(v)+"</b>").join("")}
+let history=[], replayIndex=-1, replayTimer=null;
+async function loadHistory(){try{const r=await fetch("/api/events?limit=300");const j=await r.json();history=j.events||[];renderFeed(history.slice(-12));}catch(e){}}
+function renderFeed(events){$("feed").innerHTML=events.slice(-12).reverse().map(e=>'<div class="event"><small>'+esc(new Date(Number(e.ts)*1000).toLocaleTimeString())+' · '+esc(e.actor)+' · '+esc(e.kind)+'</small><p>'+esc(JSON.stringify(e.payload))+'</p></div>').join("")}
+function replayTo(index){if(!state||!history.length)return;replayIndex=Math.max(0,Math.min(index,history.length-1));const e=history[replayIndex];$("worldLabel").textContent="REPLAY / "+new Date(Number(e.ts)*1000).toLocaleTimeString();$("clock").textContent="REPLAY "+(replayIndex+1)+" / "+history.length;renderFeed(history.slice(0,replayIndex+1));}
+function stopReplay(){if(replayTimer)clearInterval(replayTimer);replayTimer=null;replayIndex=-1;$("worldLabel").textContent=networkMode?"NEURAL LAYER / LIVE STATE":"WORLD / LIVE STATE";}
 function draw(s){state=s;const ents=s.world?.entities||[], rels=s.world?.relations||[], p=layout(ents);$("nodes").innerHTML="";$("links").innerHTML="";
  for(const r of rels){if(!p[r.source]||!p[r.target])continue;const [x1,y1]=p[r.source],[x2,y2]=p[r.target];const line=E("line",{class:"link"+(r.kind==="works_on"||r.kind==="spawned"?" hot":"")+(networkMode?" neural":""),x1,y1,x2,y2,"stroke-width":Math.min(4,Math.max(1,r.intensity||1))});$("links").append(line)}
 
@@ -147,8 +152,12 @@ const t=E("text",{x,y:y+34,"text-anchor":"middle",fill:"#c9c8c2","font-size":e.t
  $("clock").textContent=new Date().toLocaleTimeString("de-DE")+" · "+(networkMode?"NEURAL LAYER":"PHYSICAL WORLD");
 }
 async function api(path,opt){const r=await fetch(path,opt);const j=await r.json();if(!r.ok||j.error)throw Error(j.error||String(r.status));return j}
-async function refresh(){try{draw(await api("/api/state"))}catch(e){$("runtimeState").textContent="runtime / error";$("bottleneck").textContent=e.message}}
-$("refresh").onclick=refresh;$("tick").onclick=async()=>{await api("/api/tick",{method:"POST"});refresh()};$("run").onclick=async()=>{const running=state?.runtime?.running;await api(running?"/api/runtime/stop":"/api/runtime/start",{method:"POST"});$("run").textContent=running?"START":"STOP";refresh()};$("reset").onclick=()=>{view={x:0,y:0,z:1};apply();refresh()};
+async function refresh(){
+  stopReplay();
+  const r=await fetch("/api/state"); state=await r.json(); draw(state); loadHistory();
+}
+try{draw(await api("/api/state"))}catch(e){$("runtimeState").textContent="runtime / error";$("bottleneck").textContent=e.message}}
+$("refresh").onclick=refresh;\n$("reset").onclick=()=>{view={x:0,y:0,z:1};draw(state)};$("tick").onclick=async()=>{await api("/api/tick",{method:"POST"});refresh()};$("run").onclick=async()=>{const running=state?.runtime?.running;await api(running?"/api/runtime/stop":"/api/runtime/start",{method:"POST"});$("run").textContent=running?"START":"STOP";refresh()};$("reset").onclick=()=>{view={x:0,y:0,z:1};apply();refresh()};
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");networkMode=b.dataset.mode==="agents"||b.dataset.mode==="work";$("worldLabel").textContent=b.dataset.mode.toUpperCase()+" / LIVE STATE";if(state)draw(state)});
 document.addEventListener("keydown",e=>{if(e.key.toLowerCase()==="n"){networkMode=!networkMode;$("worldLabel").textContent=networkMode?"NEURAL LAYER / LIVE STATE":"WORLD / LIVE STATE";if(state)draw(state)}});
 
