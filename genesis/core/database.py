@@ -21,6 +21,10 @@ class RuntimeDatabase:
   with self.transaction() as d:
    r=d.execute("SELECT hash FROM events ORDER BY rowid DESC LIMIT 1").fetchone();prev=r["hash"] if r else "";h=hashlib.sha256(f"{prev}|{kind}|{actor}|{body}".encode()).hexdigest();d.execute("INSERT INTO events VALUES(?,?,?,?,?,?,?)",(eid,datetime.now(timezone.utc).isoformat(),kind,actor,body,prev,h))
   return eid
+ def events(self,limit=100):
+  with self._connect() as d:
+   rows=d.execute("SELECT id,ts,kind,actor,payload,hash FROM events ORDER BY rowid DESC LIMIT ?",(max(1,min(int(limit),500)),)).fetchall()
+  return [{"id":r["id"],"ts":r["ts"],"kind":r["kind"],"actor":r["actor"],"payload":json.loads(r["payload"]),"hash":r["hash"]} for r in rows]
  def policy(self,actor,tool,risk,decision,reason,input_hash):
   with self.transaction() as d:d.execute("INSERT INTO policy_decisions VALUES(?,?,?,?,?,?,?,?)",(uuid.uuid4().hex,datetime.now(timezone.utc).isoformat(),actor,tool,risk,decision,reason,input_hash))
  def verify_chain(self):
