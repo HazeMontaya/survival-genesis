@@ -4,13 +4,14 @@ from pathlib import Path
 import json, os
 from .agent import GenesisAgent
 from .ecosystem import ecosystem_snapshot
+from .heartbeat import HeartbeatDaemon
 
 ROOT=Path(__file__).resolve().parent.parent
 WORLD=ROOT/"world"/"index.html"
 
 class Runtime:
     def __init__(self):
-        self.agent=GenesisAgent(); self.running=False; self.stop_event=Event(); self.thread=None; self.lock=Lock()
+        self.agent=GenesisAgent(); self.running=False; self.stop_event=Event(); self.thread=None; self.lock=Lock(); self.heartbeat=HeartbeatDaemon(self.agent,8)
         self.last_result=None; self.last_error=None
     def tick(self):
         with self.lock:
@@ -19,16 +20,15 @@ class Runtime:
             except Exception as exc:
                 self.last_error=str(exc); self.agent.store.event("runtime_error",{"error":self.last_error}); raise
     def loop(self):
-        while not self.stop_event.wait(8):
-            if self.running:
-                try:self.tick()
-                except Exception:pass
+        self.heartbeat.start()
+        self.stop_event.wait()
+        self.heartbeat.stop()
     def start(self):
         self.running=True; self.stop_event.clear()
         if not self.thread or not self.thread.is_alive():
             self.thread=Thread(target=self.loop,daemon=True); self.thread.start()
     def stop(self):
-        self.running=False; self.stop_event.set()
+        self.running=False; self.stop_event.set(); self.heartbeat.stop()
 
 runtime=Runtime()
 
@@ -45,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
             s.update({"artifacts":runtime.agent.artifacts.snapshot(),"signals":runtime.agent.signals.snapshot(),
                       "commerce":runtime.agent.commerce.snapshot(),"connectors":runtime.agent.connectors.snapshot(),
                       "events":runtime.agent.store.events()[-100:],
-                      "runtime":{"running":runtime.running,"tick_interval_seconds":8,"last_tick":runtime.last_result is not None,"last_error":runtime.last_error}})
+                      "runtime":{"running":runtime.running,"tick_interval_seconds":8,"last_tick":runtime.last_result is not None,"last_error":runtime.last_error,"heartbeat":runtime.heartbeat.snapshot()}})
             self.send_json(s); return
         if self.path in ("/","/index.html"):
             raw=WORLD.read_bytes(); self.send_response(200); self.send_header("Content-Type","text/html; charset=utf-8")
