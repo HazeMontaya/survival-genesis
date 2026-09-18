@@ -118,8 +118,9 @@ class GenesisAgent:
             "self_testing":"Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.",
             "external_publishing":"Ein Angebot über einen konfigurierten externen Kanal veröffentlichen.",
         }
-        self._capability(cid,need["title"],descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
-        return cid,need["title"],self._project_for(cid,need["title"],need["reason"])
+        title=cid.replace("_"," ").title()
+        self._capability(cid,title,descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
+        return cid,title,self._project_for(cid,title,need["reason"])
 
     def _execute(self,task):
         if task.capability_id:
