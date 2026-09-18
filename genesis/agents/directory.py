@@ -3,7 +3,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 import json,uuid
 @dataclass
-class AgentRecord:id:str;name:str;purpose:str;parent_id:str="";state:str="alive";capabilities:list[str]=field(default_factory=list);tool_ids:list[str]=field(default_factory=list);lineage_depth:int=0;created_at:str="";updated_at:str=""
+class AgentRecord:id:str;name:str;purpose:str;parent_id:str="";state:str="alive";capabilities:list[str]=field(default_factory=list);tool_ids:list[str]=field(default_factory=list);lineage_depth:int=0;created_at:str="";updated_at:str="";activity:str="idle"
 class AgentDirectory:
  def __init__(self,path):self.path=Path(path);self.items=[];self._load()
  def _load(self):
@@ -17,6 +17,9 @@ class AgentDirectory:
  def get(self,i):return next((x for x in self.items if x.id==i),None)
  def spawn(self,name,purpose,parent_id,capabilities=None,tool_ids=None):
   p=self.get(parent_id);now=datetime.now(timezone.utc).isoformat();x=AgentRecord(uuid.uuid4().hex[:12],name,purpose,parent_id,"alive",capabilities or [],tool_ids or [],p.lineage_depth+1 if p else 0,now,now);self.items.append(x);self._save();return x
+ def set_activity(self,i,activity):
+  x=self.get(i)
+  if x:x.activity=str(activity);x.updated_at=datetime.now(timezone.utc).isoformat();self._save();return x
  def assign_capability(self,i,c):
   x=self.get(i)
   if x and c not in x.capabilities:x.capabilities.append(c);x.updated_at=datetime.now(timezone.utc).isoformat();self._save()
