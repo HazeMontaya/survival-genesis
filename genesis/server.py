@@ -57,12 +57,13 @@ class Handler(BaseHTTPRequestHandler):
             if self.path=="/api/runtime/start": runtime.start(); self.send_json({"running":True}); return
             if self.path=="/api/runtime/stop": runtime.stop(); self.send_json({"running":False}); return
             if self.path=="/api/revenue/verified":
-                secret=os.getenv("GENESIS_REVENUE_WEBHOOK_SECRET")
-                if not secret or self.headers.get("X-Genesis-Secret")!=secret:
-                    self.send_json({"error":"revenue connector not configured or unauthorized"},403); return
                 data=self.body()
-                from .economy import RevenueEvent
-                ledger=runtime.agent.economy.record_revenue(RevenueEvent(str(data.get("source","webhook")),float(data["amount_eur"]),True))
+                ledger=runtime.agent.treasury.accept_signed_revenue(
+                    str(data["event_id"]),
+                    str(data.get("source","webhook")),
+                    float(data["amount_eur"]),
+                    self.headers.get("X-Genesis-Signature",""),
+                )
                 self.send_json({"accepted":True,"ledger":ledger.__dict__}); return
         except Exception as exc:
             self.send_json({"error":str(exc)},500); return
