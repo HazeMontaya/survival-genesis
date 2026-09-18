@@ -33,7 +33,7 @@ class Treasury:
     """Provider-neutral money boundary. Secrets never enter the repository or ledger."""
     def __init__(self, store):
         self.store=store
-        self.path=Path(os.getenv("GENESIS_TREASURY_STATE","workspace/treasury.json"))
+        self.path=Path(os.getenv("GENESIS_TREASURY_STATE",str(Path(store.path).parent/"treasury.json")))
         self.policy=TreasuryPolicy(
             enabled=os.getenv("GENESIS_TREASURY_ENABLED","0")=="1",
             collect_enabled=os.getenv("GENESIS_TREASURY_COLLECT","0")=="1",
