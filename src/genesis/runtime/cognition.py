@@ -11,8 +11,8 @@ class CognitionResult:
 
 class CognitionLoop:
     """Bounded ReAct-style execution boundary. The planner is never an authority bypass."""
-    def __init__(self, policy, tools, max_turns=8):
-        self.policy=policy; self.tools=tools; self.max_turns=max(1,int(max_turns))
+    def __init__(self, policy, tools, max_turns=8, resources=None, max_mutations=4):
+        self.policy=policy; self.tools=tools; self.resources=resources; self.max_turns=max(1,int(max_turns)); self.max_mutations=max(0,int(max_mutations))
 
     def run(self, planner, initial_context=None, actor="genesis-1", authority="self"):
         context=dict(initial_context or {})
@@ -22,12 +22,19 @@ class CognitionLoop:
             if not proposal:
                 return CognitionResult("sleep",turn-1,mutations,observations,"planner returned no action")
             tool=proposal.get("tool")
+            if not tool:
+                return CognitionResult("invalid_proposal",turn-1,mutations,observations,"planner returned no tool")
+            if mutations >= self.max_mutations:
+                return CognitionResult("mutation_budget_exhausted",turn-1,mutations,observations,"mutation budget exhausted")
             args=dict(proposal.get("args") or {})
             key=(tool,tuple(sorted((str(k),str(v)) for k,v in args.items())))
             patterns[key]=patterns.get(key,0)+1
             if patterns[key]>=3:
                 return CognitionResult("loop_detected",turn-1,mutations,observations,"repeated identical action")
             args["_actor"]=actor; args["_authority"]=authority
+            if self.resources and tool not in {"read_file","list_files","remember"}:
+                if not self.resources.consume("compute_credits",1.0):
+                    return CognitionResult("resource_exhausted",turn-1,mutations,observations,"compute credits exhausted")
             result=self.tools.call(tool,**args)
             observations.append({"turn":turn,"tool":tool,"result":result})
             if tool not in {"read_file","list_files","remember"}:
