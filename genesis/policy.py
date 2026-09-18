@@ -1,93 +1,31 @@
-from __future__ import annotations
-
-import hashlib
-import json
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
 from pathlib import Path
+import json
 
-
+RISK_ORDER={'safe':0,'caution':1,'dangerous':2,'forbidden':3}
+AUTH_ORDER={'system':4,'owner':4,'self':3,'trusted_agent':2,'external':1}
 @dataclass(frozen=True)
 class PolicyDecision:
-    allowed: bool
-    reason: str
-    risk: str
-
-
-@dataclass(frozen=True)
-class ToolRule:
-    risk: str
-    min_authority: str = "self"
-
-
+    allowed: bool; tool: str; risk: str; authority: str; reason: str; timestamp: str
 class PolicyEngine:
-    """Pre-execution policy gate. No tool bypasses this boundary."""
-
-    AUTHORITY = {"external": 0, "peer": 1, "self": 2, "owner": 3}
-    RISK = {"safe": 0, "caution": 1, "dangerous": 2, "forbidden": 3}
-
-    DEFAULTS = {
-        "read_file": ToolRule("safe"),
-        "list_files": ToolRule("safe"),
-        "remember": ToolRule("safe"),
-        "send_message": ToolRule("caution"),
-        "run_tests": ToolRule("caution"),
-        "run_python": ToolRule("caution"),
-        "write_file": ToolRule("caution"),
-        "publish": ToolRule("dangerous", "owner"),
-        "payout": ToolRule("dangerous", "owner"),
-        "trade_live": ToolRule("dangerous", "owner"),
-        "modify_policy": ToolRule("forbidden", "owner"),
-        "read_secret": ToolRule("forbidden", "owner"),
-    }
-
-    PROTECTED_NAMES = {
-        "constitution.md", "owner.json", "treasury.json", "runtime.db",
-        ".env", "wallet.json", "credentials.json", "secrets.json"
-    }
-    SECRET_MARKERS = ("private_key", "secret", "password", "credential", "api_key", "token")
-
-    def __init__(self, database, root: str | Path):
-        self.db = database
-        self.root = Path(root).resolve()
-        self.kill_switch = self._read_kill_switch()
-
-    def _read_kill_switch(self) -> bool:
-        return os.getenv("GENESIS_KILL_SWITCH", "0") == "1"
-
-    def refresh(self):
-        self.kill_switch = self._read_kill_switch()
-
-    def _hash_input(self, args: dict) -> str:
-        return hashlib.sha256(json.dumps(args, sort_keys=True, default=str).encode()).hexdigest()
-
-    def _protected_path(self, path: str) -> bool:
-        p = Path(path)
-        parts = {x.lower() for x in p.parts}
-        if any(part in self.PROTECTED_NAMES for part in parts):
-            return True
-        return any(marker in p.name.lower() for marker in self.SECRET_MARKERS)
-
-    def evaluate(self, tool: str, args: dict | None = None, actor: str = "genesis-1", authority: str = "self") -> PolicyDecision:
-        args = args or {}
-        rule = self.DEFAULTS.get(tool, ToolRule("forbidden"))
-        reason = "allowed by baseline policy"
-        allowed = True
-
-        if self.kill_switch and rule.risk in ("dangerous", "forbidden"):
-            allowed, reason = False, "global kill switch is active"
-        elif self.AUTHORITY.get(authority, -1) < self.AUTHORITY[rule.min_authority]:
-            allowed, reason = False, f"authority {authority} below required {rule.min_authority}"
-        elif rule.risk == "forbidden":
-            allowed, reason = False, "tool is forbidden by policy"
-        elif tool in {"write_file", "read_file", "list_files"}:
-            path = str(args.get("path", "."))
-            resolved = (self.root / path).resolve()
-            if self.root not in resolved.parents and resolved != self.root:
-                allowed, reason = False, "path escapes workspace"
-            elif self._protected_path(path) and authority != "owner":
-                allowed, reason = False, "protected or secret path"
-
-        decision = PolicyDecision(allowed, reason, rule.risk)
-        self.db.policy(actor, tool, rule.risk, "allow" if allowed else "deny", reason, self._hash_input(args))
-        return decision
+    def __init__(self,store,constitution,treasury=None,resources=None):
+        self.store=store; self.constitution=constitution; self.treasury=treasury; self.resources=resources; self.audit_path=Path(store.path).parent/'policy.jsonl'
+    def _audit(self,d):
+        self.audit_path.parent.mkdir(parents=True,exist_ok=True)
+        with self.audit_path.open('a',encoding='utf-8') as f: f.write(json.dumps(asdict(d),ensure_ascii=False)+'\n')
+        self.store.event('policy_decision',asdict(d))
+    def evaluate(self,tool,risk='safe',authority='self',params=None):
+        params=params or {}; allowed=True; reason='allowed'
+        if risk not in RISK_ORDER: allowed=False; reason='unknown risk level'
+        elif risk=='forbidden': allowed=False; reason='tool is forbidden'
+        elif authority not in AUTH_ORDER: allowed=False; reason='unknown authority'
+        elif authority=='external' and risk in ('dangerous','forbidden'): allowed=False; reason='external authority cannot invoke dangerous actions'
+        path=str(params.get('path','')).replace('\\\\','/').lstrip('/')
+        if path and any(path==p or path.startswith(p.rstrip('/')+'/') for p in self.constitution.protected_paths) and tool in ('write_file','edit_own_file','delete_file','self_modify'): allowed=False; reason='protected path'
+        if tool in ('payout','live_trade','transfer') and risk!='dangerous': allowed=False; reason='financial action must be dangerous'
+        d=PolicyDecision(allowed,tool,risk,authority,reason,datetime.now(timezone.utc).isoformat()); self._audit(d); return d
+    def require(self,tool,risk='safe',authority='self',params=None):
+        d=self.evaluate(tool,risk,authority,params)
+        if not d.allowed: raise PermissionError(f'policy denied {tool}: {d.reason}')
+        return d
