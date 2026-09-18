@@ -147,6 +147,8 @@ class GenesisAgent:
         project = self.projects.create("Command", text, "genesis-1", []) if not any(p.title == "Command" and p.status == "active" for p in self.projects.items) else next(p for p in self.projects.items if p.title == "Command" and p.status == "active")
         task = self.tasks.create("genesis-1", "command", text, 100, "human_command", project.id)
         self.projects.attach_task(project.id, task.id)
+        self.projects.transition(project.id, "active")
+        self.workflows.ensure_for_project(project, self.tasks.snapshot())
         self.runtime_db.event("command_received", {"task_id": task.id, "text": text}, actor=actor)
         return {"task_id": task.id, "accepted": True}
 
@@ -159,6 +161,7 @@ class GenesisAgent:
         project = self._project(cid, title, f"Capability zur Erfüllung der Mission: {title}")
         task = self.tasks.create("genesis-1", "genesis", title, 95, cid, project.id)
         self.projects.attach_task(project.id, task.id)
+        self.projects.transition(project.id, "active")
         self.workflows.ensure_for_project(project, self.tasks.snapshot())
         self.runtime_db.event("decision", {"capability": cid, "task_id": task.id}, actor="genesis-1")
         return task
