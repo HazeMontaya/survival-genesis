@@ -63,4 +63,5 @@ def ecosystem_snapshot(agent):
         "memory": agent.memory.snapshot(),
         "clock": datetime.now(timezone.utc).isoformat(),
         "ledger": ledger.__dict__,
+        "world": agent.world.snapshot(agent),
     }
