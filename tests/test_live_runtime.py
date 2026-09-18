@@ -68,3 +68,24 @@ def test_no_fake_revenue_on_bootstrap(tmp_path):
     for _ in range(4): a.tick()
     assert a.store.load().earned_eur==0
     assert a.store.load().cash_eur==0
+
+
+def test_treasury_requires_owner_binding_and_limits(tmp_path,monkeypatch):
+    monkeypatch.setenv("GENESIS_OWNER_BIND_TOKEN","owner-secret")
+    monkeypatch.setenv("GENESIS_TREASURY_ENABLED","1")
+    monkeypatch.setenv("GENESIS_TREASURY_PAYOUT","1")
+    monkeypatch.setenv("GENESIS_MAX_PAYOUT_EUR","20")
+    monkeypatch.setenv("GENESIS_DAILY_PAYOUT_LIMIT_EUR","20")
+    monkeypatch.setenv("GENESIS_MIN_CASH_RESERVE_EUR","5")
+    monkeypatch.setenv("GENESIS_ALLOWED_PAYOUT_HASHES","")
+    from genesis.treasury import Treasury
+    store=StateStore(tmp_path/"state.json")
+    t=Treasury(store)
+    try:
+        t.bind_owner_account("test","owner-account","OWNER","wrong")
+        assert False
+    except PermissionError:
+        pass
+    bound=t.bind_owner_account("test","owner-account","OWNER","owner-secret")
+    assert bound["account"]["verified"]
+    assert not t.can_payout(10,destination="owner-account",current_cash_eur=100)
