@@ -11,15 +11,23 @@ WORLD=ROOT/"web"/"index.html"
 
 class Runtime:
     def __init__(self):
-        self.agent=GenesisAgent(); self.running=False; self.stop_event=Event(); self.thread=None; self.lock=Lock(); self.heartbeat=HeartbeatDaemon(self.agent,8); self.last_result=None; self.last_error=None
+        self.agent=GenesisAgent(); self.running=False; self.stop_event=Event(); self.thread=None; self.lock=Lock(); self.heartbeat=HeartbeatDaemon(self.agent,3); self.last_result=None; self.last_error=None
     def tick(self):
         with self.lock:
             try:self.last_result=self.agent.tick(); self.last_error=None; return self.last_result
             except Exception as exc:self.last_error=str(exc); self.agent.store.event("runtime_error",{"error":self.last_error}); raise
     def loop(self): self.heartbeat.start(); self.stop_event.wait(); self.heartbeat.stop()
     def start(self):
-        self.running=True; self.stop_event.clear()
-        if not self.thread or not self.thread.is_alive(): self.thread=Thread(target=self.loop,daemon=True); self.thread.start()
+        with self.lock:
+            if self.running: return
+            self.running=True; self.stop_event.clear()
+            try:
+                # A running world must do work immediately; do not leave the first state inert for one heartbeat.
+                self.last_result=self.agent.tick(); self.last_error=None
+            except Exception as exc:
+                self.last_error=str(exc); self.running=False; raise
+        if not self.thread or not self.thread.is_alive():
+            self.thread=Thread(target=self.loop,daemon=True); self.thread.start()
     def stop(self): self.running=False; self.stop_event.set(); self.heartbeat.stop()
 
 runtime=Runtime()
@@ -54,4 +62,5 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,*_): return
 
 def serve(host="127.0.0.1",port=8765):
+    runtime.start()
     print(f"Survival Genesis Welt: http://{host}:{port}"); ThreadingHTTPServer((host,port),Handler).serve_forever()
