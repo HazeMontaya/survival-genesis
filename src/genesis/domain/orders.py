@@ -50,3 +50,4 @@ class OrderEngine:
             except (KeyError,ValueError) as exc: raise ValueError("state transition requires verified evidence") from exc
         item["status"]=target; item["evidence_id"]=str(evidence_id); item["updated_at"]=datetime.now(timezone.utc).isoformat(); self._save(); return self._order(item)
     def snapshot(self): return self.orders[-500:]
+
