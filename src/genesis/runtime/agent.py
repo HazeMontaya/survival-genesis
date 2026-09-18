@@ -25,178 +25,210 @@ from genesis.runtime.policy import PolicyEngine
 from genesis.runtime.evolution import EvolutionManager
 from genesis.core.resources import ResourceLedger
 
-class NeedEngine:
-    """Derives the next missing capability from persistent runtime state."""
-    def __init__(self, agent):
-        self.agent=agent
-    def detect(self):
-        a=self.agent
-        memories=a.memory.snapshot()
-        caps={x["id"]:x for x in a.capabilities.snapshot()}
-        offers=a.commerce.snapshot()["offers"]
-        agents=a.agents.snapshot()
-        skills=a.skills.snapshot()
-        active=lambda cid: caps.get(cid,{}).get("state")=="aktiv"
-        needs=[]
-        if not memories:
-            return [{"capability":"observe_environment","title":"Umgebung beobachten","reason":"Reale Zustands- und Evidenzdaten fehlen.","urgency":100,"prerequisites":[]}]
-        if not active("goal_decomposition"):
-            needs.append({"capability":"goal_decomposition","title":"Ziel in ausführbare Schritte zerlegen","reason":"Die Mission benötigt eine überprüfbare nächste Handlung.","urgency":95,"prerequisites":["observe_environment"]})
-        if active("goal_decomposition") and len(agents)==1 and not active("agent_creation"):
-            needs.append({"capability":"agent_creation","title":"Arbeitsfähigkeit durch Spezialisierung erweitern","reason":"Der Seed-Agent ist ein Single Point of Execution.","urgency":85,"prerequisites":["goal_decomposition"]})
-        if not offers:
-            needs.append({"capability":"offer_creation","title":"Erstes lieferbares Ergebnis erzeugen","reason":"Noch kein verwertbares Ergebnis existiert.","urgency":80,"prerequisites":["goal_decomposition"]})
-        if offers and not any("research" in x.get("purpose","").lower() for x in agents):
-            needs.append({"capability":"specialist_research","title":"Evidenz- und Marktbeobachtung spezialisieren","reason":"Angebotsentscheidungen brauchen externe Evidenz.","urgency":70,"prerequisites":["agent_creation"]})
-        if not skills:
-            needs.append({"capability":"skill_creation","title":"Verifiziertes Verfahren als Skill speichern","reason":"Wiederholbare Arbeit sollte als prozedurales Wissen erhalten bleiben.","urgency":60,"prerequisites":["agent_creation"]})
-        if not active("self_testing"):
-            needs.append({"capability":"self_testing","title":"Eigenen Zustand reproduzierbar prüfen","reason":"Neue Fähigkeiten benötigen ausführbare Evidenz.","urgency":90,"prerequisites":["skill_creation"]})
-        if offers and any(x.get("configured") for x in a.connectors.snapshot()) and not any(x.get("published_url") for x in offers):
-            needs.append({"capability":"external_publishing","title":"Angebot über echten Anschluss veröffentlichen","reason":"Ein konfigurierter externer Kanal existiert.","urgency":75,"prerequisites":["offer_creation"]})
-        eligible=[need for need in needs if all(active(prerequisite) for prerequisite in need.get("prerequisites",[]))]
-        return sorted(eligible,key=lambda x:(-x["urgency"],x["capability"]))
-
 DEFAULT_OPPORTUNITIES = [
-    Opportunity("technical_microservice","service",0,120,3,.45,.65),
-    Opportunity("digital_microproduct","digital_product",0,49,4,.35,.85),
-    Opportunity("lead_generation","leads",0,100,4,.30,.75),
-    Opportunity("open_source_sponsorship","open_source",0,25,2,.15,.90),
-    Opportunity("affiliate_content","affiliate",0,60,5,.20,.70),
-    Opportunity("print_on_demand","pod",0,35,5,.15,.55),
+    Opportunity("technical_microservice", "service", 0, 120, 3, .45, .65),
+    Opportunity("digital_microproduct", "digital_product", 0, 49, 4, .35, .85),
+    Opportunity("lead_generation", "leads", 0, 100, 4, .30, .75),
+    Opportunity("open_source_sponsorship", "open_source", 0, 25, 2, .15, .90),
 ]
 
+class NeedEngine:
+    def __init__(self, agent):
+        self.agent = agent
+
+    def detect(self):
+        a = self.agent
+        memories = a.memory.snapshot()
+        caps = {x["id"]: x for x in a.capabilities.snapshot()}
+        agents = a.agents.snapshot()
+        offers = a.commerce.snapshot().get("offers", [])
+        skills = a.skills.snapshot()
+        active = lambda cid: caps.get(cid, {}).get("state") in {"aktiv", "verifiziert", "getestet"}
+        needs = []
+        if not memories:
+            needs.append(("observe_environment", "Umgebung beobachten", 100, []))
+        if memories and not active("goal_decomposition"):
+            needs.append(("goal_decomposition", "Mission zerlegen", 95, ["observe_environment"]))
+        if active("goal_decomposition") and len(agents) == 1 and not active("agent_creation"):
+            needs.append(("agent_creation", "Spezialisierung erzeugen", 90, ["goal_decomposition"]))
+        if not offers:
+            needs.append(("offer_creation", "Erstes lieferbares Ergebnis erzeugen", 80, ["goal_decomposition"]))
+        if not skills and len(agents) > 1:
+            needs.append(("skill_creation", "Verifiziertes Verfahren speichern", 60, ["agent_creation"]))
+        if not active("self_testing"):
+            needs.append(("self_testing", "Eigenen Zustand prüfen", 85, ["skill_creation"]))
+        return [
+            {"capability": c, "title": t, "urgency": u, "prerequisites": p}
+            for c, t, u, p in sorted(needs, key=lambda x: (-x[2], x[0]))
+            if all(active(p) for p in p)
+        ]
+
 class GenesisAgent:
-    """A minimal seed agent that derives work from the mission and actual runtime state."""
+    """Runtime brain. It owns decisions; the browser only observes/projects them."""
+
     def __init__(self, store=None, policy=None):
-        self.store=store or StateStore()
-        self.policy=policy or SurvivalPolicy()
-        root=self.store.path.parent
-        self.evidence=EvidenceLedger(root/"evidence.json")
-        self.orders=OrderEngine(root/"orders.json",self.evidence)
-        self.resources=ResourceLedger(root/"resources.json")
-        self.economy=Economy(self.store,self.evidence,self.resources)
-        self.company=CompanyProfile()
-        self.tasks=TaskBoard(root/"tasks.json")
-        self.memory=MemoryGraph(root/"memory.json")
-        self.artifacts=ArtifactStore(root/"artifacts")
-        self.signals=SignalEngine(self.store,self.memory)
-        self.commerce=CommerceEngine(self.store,self.artifacts,self.memory)
-        self.connectors=ConnectorRegistry(self.store)
-        self.capabilities=CapabilityRegistry(root/"capabilities.json")
-        self.projects=ProjectBoard(root/"projects.json")
-        self.agents=AgentDirectory(root/"agents.json")
+        self.store = store or StateStore()
+        self.policy = policy or SurvivalPolicy()
+        root = self.store.path.parent
+        self.evidence = EvidenceLedger(root / "evidence.json")
+        self.orders = OrderEngine(root / "orders.json", self.evidence)
+        self.resources = ResourceLedger(root / "resources.json")
+        self.economy = Economy(self.store, self.evidence, self.resources)
+        self.company = CompanyProfile()
+        self.tasks = TaskBoard(root / "tasks.json")
+        self.memory = MemoryGraph(root / "memory.json")
+        self.artifacts = ArtifactStore(root / "artifacts")
+        self.signals = SignalEngine(self.store, self.memory)
+        self.commerce = CommerceEngine(self.store, self.artifacts, self.memory)
+        self.connectors = ConnectorRegistry(self.store)
+        self.capabilities = CapabilityRegistry(root / "capabilities.json")
+        self.projects = ProjectBoard(root / "projects.json")
+        self.agents = AgentDirectory(root / "agents.json")
         self.agents.ensure_genesis()
-        self.messages=MessageBus(root/"messages.json")
-        self.runtime_db=RuntimeDatabase(root/"runtime.db")
-        self.runtime_policy=PolicyEngine(self.runtime_db,root)
-        self.evolution=EvolutionManager(root/"evolution.json",self.evidence)
-        self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.runtime_policy)
-        self.needs=NeedEngine(self)
-        self.treasury=Treasury(self.store)
-        self.skills=SkillRegistry(root/"skills.json")
-        self.soul=SoulStore(root/"soul.json")
+        self.messages = MessageBus(root / "messages.json")
+        self.runtime_db = RuntimeDatabase(root / "runtime.db")
+        self.runtime_policy = PolicyEngine(self.runtime_db, root)
+        self.evolution = EvolutionManager(root / "evolution.json", self.evidence)
+        self.tools = ToolRegistry(root, self.store, self.memory, self.messages, self.runtime_policy)
+        self.needs = NeedEngine(self)
+        self.treasury = Treasury(self.store)
+        self.skills = SkillRegistry(root / "skills.json")
+        self.soul = SoulStore(root / "soul.json")
         self.soul.ensure(self.company.mission)
-        self.world=WorldModel(root/"world.json")
+        self.world = WorldModel()
 
     def snapshot(self):
-        l=self.store.load()
-        self.world.sync(self)
+        ledger = self.store.load()
+        self.world.project(self)
         return {
-            "mode":self.policy.mode(l),"company":self.company.snapshot(),"ledger":l.__dict__,"tasks":self.tasks.snapshot(),
-            "memory":self.memory.snapshot(),"artifacts":self.artifacts.snapshot(),"signals":self.signals.snapshot(),
-            "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
-            "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
-            "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"orders":self.orders.snapshot(),"evolution":self.evolution.snapshot(),"runtime":self.runtime_db.snapshot(),
-            "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
+            "mode": self.policy.mode(ledger),
+            "company": self.company.snapshot(),
+            "ledger": ledger.__dict__,
+            "tasks": self.tasks.snapshot(),
+            "memory": self.memory.snapshot(),
+            "artifacts": self.artifacts.snapshot(),
+            "signals": self.signals.snapshot(),
+            "commerce": self.commerce.snapshot(),
+            "connectors": self.connectors.snapshot(),
+            "capabilities": self.capabilities.snapshot(),
+            "projects": self.projects.snapshot(),
+            "agents": self.agents.snapshot(),
+            "messages": self.messages.snapshot(),
+            "tools": self.tools.snapshot(),
+            "skills": self.skills.snapshot(),
+            "soul": self.soul.snapshot(),
+            "world": self.world.snapshot(self),
+            "treasury": self.treasury.snapshot(),
+            "resources": self.resources.snapshot(),
+            "evidence": self.evidence.snapshot(),
+            "orders": self.orders.snapshot(),
+            "evolution": self.evolution.snapshot(),
+            "runtime": self.runtime_db.snapshot(),
+            "top_opportunities": [{"name": x.name, "channel": x.channel, "score": round(x.score(), 3)} for x in rank(DEFAULT_OPPORTUNITIES)],
         }
 
-    def _capability(self,cid,name,description,owner="genesis-1",prerequisites=None):
-        c=self.capabilities.ensure(cid,name,description,prerequisites,owner)
-        if c.state=="entdeckt": self.capabilities.transition(cid,"geplant")
+    def _capability(self, cid, name, description, owner="genesis-1", prerequisites=None):
+        c = self.capabilities.ensure(cid, name, description, prerequisites or [], owner)
+        if c.state == "entdeckt":
+            self.capabilities.transition(cid, "geplant")
         return c
 
-    def _project_for(self,cid,title,goal,owner="genesis-1"):
-        existing=next((p for p in self.projects.items if p.status not in ("done","failed") and cid in p.required_capabilities),None)
-        if existing:return existing
-        return self.projects.create(title,goal,owner,[cid])
+    def _project(self, cid, title, goal):
+        p = next((x for x in self.projects.items if x.status not in ("done", "failed") and cid in x.required_capabilities), None)
+        return p or self.projects.create(title, goal, "genesis-1", [cid])
+
+    def command(self, text: str, actor="human"):
+        text = str(text).strip()
+        if not text:
+            raise ValueError("command is empty")
+        project = self.projects.create("Command", text, "genesis-1", []) if not any(p.title == "Command" and p.status == "active" for p in self.projects.items) else next(p for p in self.projects.items if p.title == "Command" and p.status == "active")
+        task = self.tasks.create("genesis-1", "command", text, 100, "human_command", project.id)
+        self.projects.attach_task(project.id, task.id)
+        self.runtime_db.event("command_received", {"task_id": task.id, "text": text}, actor=actor)
+        return {"task_id": task.id, "accepted": True}
 
     def decide(self):
-        need=next(iter(self.needs.detect()),None)
-        if not need:return None,None,None
-        cid=need["capability"]
-        genesis=self.agents.get("genesis-1")
-        descriptions={"observe_environment":"Zustand, Ressourcen und externe Signale erfassen.","goal_decomposition":"Aus der Mission konkrete Ziele und Abhängigkeiten ableiten.","agent_creation":"Neue spezialisierte Agenten aus einem überprüfbaren Blueprint erzeugen.","offer_creation":"Ein überprüfbares und lieferbares Ergebnis erzeugen.","specialist_research":"Markt- und Evidenzsignale systematisch untersuchen.","skill_creation":"Wiederverwendbare Verfahren aus verifizierter Arbeit extrahieren.","self_testing":"Änderungen und Fähigkeiten durch reproduzierbare Tests prüfen.","external_publishing":"Ein Angebot über einen konfigurierten externen Kanal veröffentlichen."}
-        self._capability(cid,need["title"],descriptions.get(cid,need["reason"]),genesis.id,need.get("prerequisites",[]))
-        return cid,need["title"],self._project_for(cid,need["title"],need["reason"])
+        need = next(iter(self.needs.detect()), None)
+        if not need:
+            return None
+        cid, title, _, prereq = need["capability"], need["title"], need["urgency"], need["prerequisites"]
+        self._capability(cid, title, f"Runtime capability: {title}", prerequisites=prereq)
+        project = self._project(cid, title, f"Capability zur Erfüllung der Mission: {title}")
+        task = self.tasks.create("genesis-1", "genesis", title, 95, cid, project.id)
+        self.projects.attach_task(project.id, task.id)
+        self.runtime_db.event("decision", {"capability": cid, "task_id": task.id}, actor="genesis-1")
+        return task
 
-    def _verify_evidence(self, evidence_id, verifier="runtime"):
-        """Only the runtime verifier may promote deterministic internal evidence."""
-        return self.evidence.verify(evidence_id, verifier=verifier)
-
-    def _record_verified(self, subject_id, kind, summary, payload=None, source="runtime"):
-        ev=self.evidence.record(subject_id,kind,summary,payload,source,status="observed")
-        self._verify_evidence(ev.id)
+    def _verified(self, subject, kind, summary, payload=None, source="runtime"):
+        ev = self.evidence.record(subject, kind, summary, payload, source, status="observed")
+        self.evidence.verify(ev.id, verifier="runtime")
         return ev
 
-    def _execute(self,task):
-        if task.capability_id:self.capabilities.transition(task.capability_id,"in_entwicklung")
+    def execute(self, task):
+        if task.capability_id:
+            self.capabilities.transition(task.capability_id, "in_entwicklung")
         try:
-            if task.capability_id=="observe_environment":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("observation",f"Startbeobachtung: {signal['summary']}",.8); ev=self._record_verified(task.id,"observation",signal["summary"],signal,"signal-engine"); evidence={"type":"observation","signal":signal,"evidence_id":ev.id}
-            elif task.capability_id=="goal_decomposition":
-                self.memory.remember("goal","Mission in überprüfbare Teilziele zerlegen.",.9); ev=self._record_verified(task.id,"goal_decomposition","Mission in überprüfbare Teilziele zerlegt",{"mission":self.company.mission},"runtime"); evidence={"type":"goal_decomposition","verified":True,"evidence_id":ev.id}
-            elif task.capability_id=="agent_creation":
-                child=self.agents.spawn("Researcher","Untersuche Belege, Chancen und externe Signale.",task.agent,[],["read_file","list_files","run_tests","remember","send_message"])
-                self.messages.send(task.agent,child.id,"Willkommen. Untersuche externe Signale und liefere belegte Beobachtungen.","onboarding")
-                self.memory.remember("agent",f"Neuer Agent erzeugt: {child.name}",.9)
-                self._capability("research_observation","Recherche beobachten","Externe Signale erfassen und als Evidenz speichern.",child.id)
-                child_task=self.tasks.create(child.id,"research","Führe eine Recherchebeobachtung durch",70,"research_observation","")
-                self.messages.send(task.agent,child.id,"Arbeitsauftrag: Führe die Recherchebeobachtung aus und melde Evidenz.","task")
-                ev=self._record_verified(task.id,"agent_created","Spezialisierter Research-Agent erzeugt",{"agent_id":child.id,"task_id":child_task.id},"runtime"); evidence={"type":"agent_created","agent_id":child.id,"task_id":child_task.id,"evidence_id":ev.id}
-            elif task.capability_id=="research_observation":
-                signal=self.signals.scan(DEFAULT_OPPORTUNITIES[0]); self.memory.remember("research",signal["summary"],signal["score"]); self.messages.send(task.agent,"genesis-1",signal["summary"],"result"); ev=self._record_verified(task.id,"research_observation",signal["summary"],signal,"signal-engine"); evidence={"type":"research_observation","signal":signal,"evidence_id":ev.id}
-            elif task.capability_id=="offer_creation":
-                choice=rank(DEFAULT_OPPORTUNITIES)[0]; offer=self.commerce.create_offer(choice); ev=self._record_verified(offer["id"],"offer_created","Angebot als Artefakt erzeugt",offer,"commerce"); evidence={"type":"artifact_created","artifact_id":offer["artifact_id"],"offer_id":offer["id"],"evidence_id":ev.id}
-            elif task.capability_id=="specialist_research":
-                child=self.agents.spawn("Researcher","Untersuche Markt- und Evidenzsignale und liefere belegte Beobachtungen.",task.agent,["specialist_research"],["read_file","list_files","run_tests","remember","send_message"]); self.messages.send(task.agent,child.id,"Arbeite als spezialisierter Recherche-Agent und dokumentiere Evidenz.","onboarding"); ev=self._record_verified(task.id,"specialist_agent_created","Spezialisierter Research-Agent erzeugt",{"agent_id":child.id},"runtime"); evidence={"type":"agent_created","agent_id":child.id,"evidence_id":ev.id}
-            elif task.capability_id=="skill_creation":
-                skill=self.skills.create("research_basics","Recherche-Grundlagen","Belege und Signale strukturiert untersuchen.","Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern."); ev=self._record_verified(task.id,"skill_created","Wiederverwendbarer Recherche-Skill gespeichert",{"skill_id":skill.id},"runtime"); evidence={"type":"skill_created","skill_id":skill.id,"evidence_id":ev.id}
-            elif task.capability_id=="self_testing":
-                result=self.tools.call("run_tests")
-                if result["returncode"]!=0: raise RuntimeError(result["stderr"] or result["stdout"])
-                ev=self._record_verified(task.id,"test_run","Repository-Tests erfolgreich ausgeführt",result,"runtime"); evidence={"type":"test_run","returncode":result["returncode"],"stdout":result["stdout"][-3000:],"evidence_id":ev.id}
-            elif task.capability_id=="external_publishing":
-                configured=any(c["id"]=="webhook" and c["configured"] for c in self.connectors.snapshot())
-                if not configured: raise RuntimeError("Kein externer Veröffentlichungsanschluss konfiguriert")
-                ev=self._record_verified(task.id,"connector_ready","Konfigurierter Veröffentlichungsanschluss vorhanden",{"configured":True},"runtime"); evidence={"type":"connector_ready","verified":True,"evidence_id":ev.id}
+            if task.capability_id in {"observe_environment", "research_observation"}:
+                signal = self.signals.scan(DEFAULT_OPPORTUNITIES[0])
+                self.memory.remember("observation", signal["summary"], signal["score"])
+                ev = self._verified(task.id, task.capability_id, signal["summary"], signal, "signal-engine")
+                result = {"evidence_id": ev.id, "signal": signal}
+            elif task.capability_id == "goal_decomposition":
+                self.memory.remember("goal", self.company.mission, .9)
+                ev = self._verified(task.id, "goal", "Mission als überprüfbarer Arbeitsgegenstand gespeichert", {"mission": self.company.mission})
+                result = {"evidence_id": ev.id}
+            elif task.capability_id == "agent_creation":
+                child = self.agents.spawn("Researcher", "Research, Evidenz und Marktbeobachtung", "genesis-1",
+                                          ["research_observation"], ["read_file", "list_files", "run_tests", "remember", "send_message"])
+                self.messages.send("genesis-1", child.id, "Arbeite nur mit belegbaren Beobachtungen.", "onboarding")
+                ev = self._verified(task.id, "agent_created", "Researcher erzeugt", {"agent_id": child.id})
+                result = {"evidence_id": ev.id, "agent_id": child.id}
+            elif task.capability_id == "offer_creation":
+                choice = rank(DEFAULT_OPPORTUNITIES)[0]
+                offer = self.commerce.create_offer(choice)
+                ev = self._verified(offer["id"], "offer_created", "Angebot als internes Artefakt erzeugt", offer, "commerce")
+                result = {"evidence_id": ev.id, "offer_id": offer["id"]}
+            elif task.capability_id == "skill_creation":
+                skill = self.skills.create("research_basics", "Recherche-Grundlagen",
+                                           "Quelle erfassen → Signal prüfen → Unsicherheit markieren → Ergebnis speichern.")
+                ev = self._verified(task.id, "skill_created", "Skill gespeichert", {"skill_id": skill.id})
+                result = {"evidence_id": ev.id}
+            elif task.capability_id == "self_testing":
+                test = self.tools.call("run_tests")
+                if test.get("returncode", 1) != 0:
+                    raise RuntimeError(test.get("stderr") or test.get("stdout") or "tests failed")
+                ev = self._verified(task.id, "test_run", "Tests erfolgreich ausgeführt", test)
+                result = {"evidence_id": ev.id, "returncode": 0}
+            elif task.capability_id == "human_command":
+                ev = self._verified(task.id, "command_received", task.title, {"command": task.title}, "human")
+                result = {"evidence_id": ev.id, "status": "queued_for_planning"}
             else:
-                ev=self._record_verified(task.id,"capability_step",f"Capability {task.capability_id} ausgeführt",{"task_id":task.id},"runtime")
-                evidence={"type":"capability_step","verified":True,"evidence_id":ev.id}
-            self.tasks.complete(task.id,evidence=evidence,result="verifiziert")
+                ev = self._verified(task.id, "capability_step", task.title, {"task_id": task.id})
+                result = {"evidence_id": ev.id}
+            self.tasks.complete(task.id, evidence=result, result="verified")
             if task.capability_id:
-                for state in ("getestet","verifiziert","aktiv"): self.capabilities.transition(task.capability_id,state,evidence)
-                self.agents.assign_capability(task.agent,task.capability_id); self.soul.evolve(task.capability_id)
-            if task.project_id:
-                project=self.projects.get(task.project_id); all_done=bool(project and project.task_ids and all((self.tasks.get(tid) and self.tasks.get(tid).status=="done") for tid in project.task_ids)); self.projects.transition(task.project_id,"done" if all_done else "active",evidence)
-            return evidence
+                for state in ("getestet", "verifiziert", "aktiv"):
+                    self.capabilities.transition(task.capability_id, state, result)
+                self.agents.assign_capability(task.agent, task.capability_id)
+                self.soul.evolve(task.capability_id)
+            return result
         except Exception as exc:
-            self.tasks.fail(task.id,str(exc))
-            if task.capability_id:self.capabilities.transition(task.capability_id,"fehlgeschlagen",{"error":str(exc)})
-            if task.project_id:self.projects.transition(task.project_id,"blocked",{"error":str(exc)})
-            self.store.event("task_failed",{"task_id":task.id,"error":str(exc)})
-            return {"error":str(exc)}
+            self.tasks.fail(task.id, str(exc))
+            self.runtime_db.event("task_failed", {"task_id": task.id, "error": str(exc)}, actor=task.agent)
+            return {"error": str(exc)}
 
     def tick(self):
-        self.tasks.unblock(); cid,title,project=self.decide(); created=None
-        if cid:
-            self.runtime_db.event("decision",{"capability":cid,"title":title},actor="genesis-1")
-            task=self.tasks.create("genesis-1","genesis",title,95,cid,project.id); self.projects.attach_task(project.id,task.id); created=task; self.store.event("genesis_decision",{"capability":cid,"title":title,"project_id":project.id})
-        executed=[]
+        self.tasks.unblock()
+        decision = self.decide()
+        executed = []
         for a in self.agents.snapshot():
-            task=self.tasks.start_next(a["id"])
+            task = self.tasks.start_next(a["id"])
             if task:
-                self.runtime_db.event("task_started",{"task_id":task.id,"capability":task.capability_id},actor=a["id"])
-                executed.append({"task_id":task.id,"agent":a["id"],"result":self._execute(task)})
-        self.world.sync(self); self.runtime_db.event("world_projection",{"entities":len(self.world.entities),"relations":len(self.world.relations)},actor="system"); result=self.snapshot(); result["decision"]={"capability":cid,"title":title,"project_id":project.id if project else None}; result["created_task"]=created.id if created else None; result["execution"]=executed; return result
+                self.runtime_db.event("task_started", {"task_id": task.id}, actor=a["id"])
+                executed.append({"task_id": task.id, "agent": a["id"], "result": self.execute(task)})
+        self.world.project(self)
+        self.runtime_db.event("world_tick", {"entities": len(self.world.entities), "relations": len(self.world.relations)}, actor="system")
+        result = self.snapshot()
+        result["decision"] = {"task_id": decision.id if decision else None}
+        result["execution"] = executed
+        return result
