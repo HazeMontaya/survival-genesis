@@ -252,6 +252,6 @@ class GenesisAgent:
         self.world.project(self)
         self.runtime_db.event("world_tick", {"entities": len(self.world.entities), "relations": len(self.world.relations)}, actor="system")
         result = self.snapshot()
-        result["decision"] = {"task_id": decision.id if decision else None}
+        result["decision"] = {"task_id": decision.id if decision else None, "capability": decision.capability_id if decision else None}
         result["execution"] = executed
         return result
