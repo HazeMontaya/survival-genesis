@@ -38,11 +38,10 @@ class WorldModel:
   for x in a.messages.snapshot():self.ensure("message:"+x["id"],"message",x["content"][:48],x["sender"],x["content"],"delivered" if x.get("delivered") else "unread","intelligence","collaborating",{"kind":x.get("kind","task")});self.relate("agent:"+x["sender"],"agent:"+x["recipient"],"communicates","neural",1,{"message_id":x["id"]})
   ledger=a.store.load();self.ensure("economy:cash","economy","CASH",state="active",room="economy",metadata={"cash_eur":ledger.cash_eur,"earned_eur":ledger.earned_eur,"spent_eur":ledger.spent_eur,"reserved_eur":ledger.reserved_eur,"net_cash":ledger.net_cash});self.ensure("economy:reserve","reserve","RESERVE",state="active",room="economy",metadata={"reserved_eur":ledger.reserved_eur})
   for x in a.commerce.snapshot()["offers"]:self.ensure("order:"+x["id"],"order","OFFER · "+x["name"],state=x.get("status","entwurf"),room="output",metadata={"price_eur":x.get("price_eur",0),"channel":x.get("channel","")})
-  self._place()
   for x in a.artifacts.snapshot():self.ensure("artifact:"+x["id"],"artifact",x["title"],reason=x.get("status",""))
   for x in a.skills.snapshot():self.ensure("skill:"+x["id"],"skill",x["name"],reason=x["purpose"])
   for x in a.tools.snapshot():self.ensure("tool:"+x["id"],"tool",x["id"],reason=x["description"])
-  self._save();return self.snapshot()
+  self._place();self._save();return self.snapshot()
  def _place(self):
   rooms={"core":(0,0),"intelligence":(-430,-190),"production":(330,-210),"quality":(-250,270),"knowledge":(250,300),"output":(690,30),"economy":(690,300)};b={}
   for e in self.entities:
