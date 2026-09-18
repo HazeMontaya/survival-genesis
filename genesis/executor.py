@@ -3,7 +3,7 @@
 Cognition selects a capability. This layer contains concrete side effects.
 """
 from .opportunities import rank
-from .agent import DEFAULT_OPPORTUNITIES
+from .catalog import DEFAULT_OPPORTUNITIES
 
 class CapabilityExecutor:
     def __init__(self,agent):
