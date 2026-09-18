@@ -20,9 +20,13 @@ def test_commerce_persists(tmp_path):
     class O:
         name="test_offer"; channel="service"; expected_margin_eur=10
     offer=c.create_offer(O())
-    assert offer["status"]=="draft"
+    assert offer["status"]=="entwurf"
     assert CommerceEngine(store,ArtifactStore(tmp_path/"artifacts"),MemoryGraph(tmp_path/"memory.json")).snapshot()["offers"]
 
-def test_verified_revenue_endpoint_contract_is_gated():
-    import os
-    assert not os.getenv("GENESIS_REVENUE_WEBHOOK_SECRET") or os.getenv("GENESIS_REVENUE_WEBHOOK_SECRET")
+def test_world_contract():
+    from pathlib import Path
+    p=Path(__file__).parents[1]/"world"/"index.html"
+    assert p.exists()
+    html=p.read_text(encoding="utf-8")
+    assert "<svg" in html
+    assert "/api/state" in html
