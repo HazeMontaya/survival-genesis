@@ -22,6 +22,7 @@ from genesis.domain.soul import SoulStore
 from genesis.integrations.treasury import Treasury
 from genesis.runtime.database import RuntimeDatabase
 from genesis.runtime.policy import PolicyEngine
+from genesis.runtime.evolution import EvolutionManager
 from genesis.core.resources import ResourceLedger
 
 class NeedEngine:
@@ -89,6 +90,7 @@ class GenesisAgent:
         self.messages=MessageBus(root/"messages.json")
         self.runtime_db=RuntimeDatabase(root/"runtime.db")
         self.runtime_policy=PolicyEngine(self.runtime_db,root)
+        self.evolution=EvolutionManager(root/"evolution.json")
         self.tools=ToolRegistry(root,self.store,self.memory,self.messages,self.runtime_policy)
         self.needs=NeedEngine(self)
         self.treasury=Treasury(self.store)
@@ -106,7 +108,7 @@ class GenesisAgent:
             "commerce":self.commerce.snapshot(),"connectors":self.connectors.snapshot(),"capabilities":self.capabilities.snapshot(),
             "projects":self.projects.snapshot(),"agents":self.agents.snapshot(),"messages":self.messages.snapshot(),
             "tools":self.tools.snapshot(),"skills":self.skills.snapshot(),"soul":self.soul.snapshot(),
-            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"orders":self.orders.snapshot(),"runtime":self.runtime_db.snapshot(),
+            "world":self.world.snapshot(self),"treasury":self.treasury.snapshot(),"resources":self.resources.snapshot(),"evidence":self.evidence.snapshot(),"orders":self.orders.snapshot(),"evolution":self.evolution.snapshot(),"runtime":self.runtime_db.snapshot(),
             "top_opportunities":[{"name":x.name,"channel":x.channel,"score":round(x.score(),3)} for x in rank(DEFAULT_OPPORTUNITIES)]
         }
 
