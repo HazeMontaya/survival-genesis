@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Survival Genesis — Ecosystem</title>
+<style>
+:root{--bg:#071019;--panel:#0c1722;--card:#101f2d;--line:#203244;--text:#e8f0f7;--muted:#8da0b1;--good:#55d69a;--warn:#f0c36a;--accent:#72a7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1400px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:18px}.brand{font-size:24px;font-weight:750}.sub{color:var(--muted);margin-top:4px}.pill{border:1px solid var(--line);padding:7px 10px;border-radius:999px;color:var(--good)}
+.grid{display:grid;grid-template-columns:1.7fr 1fr;gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}.panel h2{font-size:14px;margin:0 0 12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:var(--card);border:1px solid var(--line);padding:12px;border-radius:10px}.label{color:var(--muted);font-size:12px}.value{font-size:20px;font-weight:700;margin-top:5px}.eco{min-height:430px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 45%,#10273a 0,#091622 48%,#071019 100%)}svg{width:100%;height:390px}.node{cursor:pointer}.node rect{fill:var(--card);stroke:var(--line);stroke-width:1.5}.node text{fill:var(--text);font-size:12px}.link{stroke:#31516b;stroke-width:1.5;stroke-dasharray:5 5}.core rect{stroke:var(--accent)}.good rect{stroke:var(--good)}.right{display:grid;gap:16px}.agent{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.agent:last-child{border-bottom:0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:7px}.events{max-height:230px;overflow:auto}.event{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.event span{color:var(--muted)}button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer}button:hover{border-color:var(--accent)}.controls{display:flex;gap:8px;flex-wrap:wrap}.notice{color:var(--warn);font-size:12px;margin-top:10px}
+@media(max-width:850px){main{padding:14px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.eco{min-height:390px}}
+</style>
+</head>
+<body>
+<main>
+<section class="top">
+<div><div class="brand">SURVIVAL GENESIS</div><div class="sub">Autonomous company & agent ecosystem · zero-capital bootstrap</div></div>
+<div class="pill"><span class="dot"></span><span id="mode">BOOTSTRAP</span></div>
+</section>
+<section class="stats">
+<div class="stat"><div class="label">Cash</div><div class="value" id="cash">€0.00</div></div>
+<div class="stat"><div class="label">Verified revenue</div><div class="value" id="revenue">€0.00</div></div>
+<div class="stat"><div class="label">Active agents</div><div class="value" id="agents">3</div></div>
+<div class="stat"><div class="label">Experiments</div><div class="value" id="experiments">0</div></div>
+</section>
+<div style="height:16px"></div>
+<section class="grid">
+<div class="panel eco">
+<h2>LIVE ECOSYSTEM</h2>
+<svg viewBox="0 0 760 390" role="img" aria-label="Survival Genesis ecosystem graph">
+<line class="link" x1="380" y1="195" x2="150" y2="95"/><line class="link" x1="380" y1="195" x2="150" y2="295"/>
+<line class="link" x1="380" y1="195" x2="610" y2="95"/><line class="link" x1="380" y1="195" x2="610" y2="295"/>
+<line class="link" x1="150" y1="95" x2="610" y2="95"/><line class="link" x1="150" y1="295" x2="610" y2="295"/>
+<g class="node core" transform="translate(300,150)"><rect rx="14" width="160" height="90"/><text x="80" y="30" text-anchor="middle">GENESIS CORE</text><text x="80" y="53" text-anchor="middle">Decision + Memory</text><text x="80" y="73" text-anchor="middle" fill="#8da0b1">€0 bootstrap</text></g>
+<g class="node good" data-name="Research" transform="translate(70,55)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">RESEARCH</text><text x="80" y="53" text-anchor="middle">Market discovery</text></g>
+<g class="node" data-name="Products" transform="translate(70,255)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">PRODUCTS</text><text x="80" y="53" text-anchor="middle">Digital + services</text></g>
+<g class="node" data-name="Distribution" transform="translate(530,55)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">DISTRIBUTION</text><text x="80" y="53" text-anchor="middle">Listings + content</text></g>
+<g class="node" data-name="Economy" transform="translate(530,255)"><rect rx="12" width="160" height="75"/><text x="80" y="31" text-anchor="middle">ECONOMY</text><text x="80" y="53" text-anchor="middle">Revenue + reinvestment</text></g>
+</svg>
+<div class="notice">Real external execution remains gated until provider credentials and explicit policy switches are configured.</div>
+</div>
+<div class="right">
+<div class="panel"><h2>AGENTS</h2>
+<div class="agent"><div><span class="dot"></span>Research Agent</div><span>scanning</span></div>
+<div class="agent"><div><span class="dot"></span>Product Agent</div><span>ready</span></div>
+<div class="agent"><div><span class="dot"></span>Revenue Agent</div><span>guarded</span></div>
+</div>
+<div class="panel"><h2>CONTROL</h2><div class="controls"><button id="tick">Run tick</button><button id="reset">Reset demo state</button></div></div>
+<div class="panel"><h2>EVENT STREAM</h2><div class="events" id="events" aria-live="polite"></div></div>
+</div>
+</section>
+</main>
+<script>
+(function(){
+const s={cash:0,revenue:0,experiments:0};
+const $=id=>document.getElementById(id);
+function render(){ $('cash').textContent='€'+s.cash.toFixed(2);$('revenue').textContent='€'+s.revenue.toFixed(2);$('experiments').textContent=s.experiments;$('mode').textContent=s.cash>0?'PRODUCTIVE':'BOOTSTRAP';}
+function event(msg){const d=document.createElement('div');d.className='event';d.innerHTML='<b>'+msg+'</b> <span>· '+new Date().toLocaleTimeString()+'</span>';$('events').prepend(d);}
+$('tick').addEventListener('click',()=>{s.experiments++;render();event('Experiment selected: zero-cost opportunity scan');});
+$('reset').addEventListener('click',()=>{s.cash=0;s.revenue=0;s.experiments=0;$('events').innerHTML='';render();event('System reset to €0 bootstrap state');});
+document.querySelectorAll('.node[data-name]').forEach(n=>n.addEventListener('click',()=>event('Module selected: '+n.dataset.name)));
+render();event('Genesis Core initialized at €0.00');
+})();
+</script>
+</body>
+</html>
