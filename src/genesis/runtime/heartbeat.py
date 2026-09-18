@@ -14,7 +14,7 @@ class Heartbeat:
 class HeartbeatDaemon:
     def __init__(self,agent,interval_seconds=8):
         self.agent=agent
-        self.items=[Heartbeat("world_cycle",interval_seconds)]
+        self.items=[Heartbeat("world_cycle",interval_seconds),Heartbeat("maintenance",max(30,interval_seconds*4)),Heartbeat("audit",max(60,interval_seconds*8))]
         self.stop_event=Event(); self.thread=None; self.lock=Lock()
 
     def snapshot(self): return [asdict(x) for x in self.items]
@@ -31,8 +31,13 @@ class HeartbeatDaemon:
             hb=self.items[0]
             if not hb.enabled: continue
             try:
-                with self.lock: self.agent.tick()
+                with self.lock:
+                    self.agent.tick()
+                    self.agent.memory.age()
+                    if self.agent.runtime_db.verify_event_chain() is False:
+                        raise RuntimeError("runtime event chain verification failed")
                 hb.last_run=datetime.now(timezone.utc).isoformat(); hb.runs+=1
             except Exception as exc:
                 hb.failures+=1
                 self.agent.store.event("heartbeat_error",{"error":str(exc)})
+                self.agent.runtime_db.event("heartbeat_error",{"error":str(exc)},actor="heartbeat")
