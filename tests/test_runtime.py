@@ -37,3 +37,15 @@ def test_treasury_owner_gate(tmp_path,monkeypatch):
  try:t.bind_owner_account("x","y","OWNER","wrong");assert False
  except PermissionError:pass
  assert t.bind_owner_account("x","y","OWNER","owner-secret")["account"]["verified"]
+
+
+def test_workflow_tracks_task_lifecycle(tmp_path):
+ from genesis.work.projects import ProjectBoard
+ from genesis.work.tasks import TaskBoard
+ from genesis.work.workflows import WorkflowEngine
+ projects=ProjectBoard(tmp_path/"projects.json");tasks=TaskBoard(tmp_path/"tasks.json");workflows=WorkflowEngine(tmp_path/"workflows.json")
+ p=projects.create("Produktionslinie","Ein prüfbares Ergebnis erzeugen","genesis-1",["offer_creation"])
+ t=tasks.create("genesis-1","Output erzeugen",80,"offer_creation",p.id);projects.attach_task(p.id,t.id)
+ w=workflows.ensure_for_project(p,tasks.snapshot());assert w.status=="queued";assert w.stages[0]["task_id"]==t.id
+ tasks.start_next("genesis-1");w=workflows.ensure_for_project(p,tasks.snapshot());assert w.status=="active";assert w.stages[0]["status"]=="active"
+ tasks.complete(t.id,{"verified":True,"evidence_id":"e-1"});w=workflows.ensure_for_project(p,tasks.snapshot());assert w.status=="done";assert w.stages[0]["status"]=="done"
