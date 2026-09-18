@@ -47,7 +47,10 @@ class ToolRegistry:
         if tool_id=="read_file":
             p=self._path(kwargs["path"]); result=p.read_text(encoding="utf-8")
         elif tool_id=="write_file":
-            p=self._path(kwargs["path"]); p.parent.mkdir(parents=True,exist_ok=True); p.write_text(kwargs["content"],encoding="utf-8"); result={"path":str(p)}
+            relative=str(kwargs["path"]).replace("\\\\","/").lstrip("/")
+            if not (relative=="workspace" or relative.startswith("workspace/")):
+                raise PermissionError("write_file is limited to runtime workspace; source changes require the GitHub change-control path")
+            p=self._path(relative); p.parent.mkdir(parents=True,exist_ok=True); p.write_text(kwargs["content"],encoding="utf-8"); result={"path":str(p)}
         elif tool_id=="list_files":
             base=self._path(kwargs.get("path","."))
             result=[str(x.relative_to(self.root)) for x in base.rglob("*") if x.is_file()][:500]
