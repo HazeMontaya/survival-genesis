@@ -90,6 +90,11 @@ class WorldModel:
         for c in agent.connectors.snapshot():
             if c.get("configured") or c.get("enabled"):
                 self.ensure("connector:"+c["id"],"connector",c["id"],"genesis-core","",c.get("description",""))
+        for s in agent.skills.snapshot():
+            self.ensure("skill:"+s["id"],"skill",s["name"],"genesis-core","",s["purpose"])
+        for t in agent.tools.snapshot():
+            if t.get("enabled"):
+                self.ensure("tool:"+t["id"],"tool",t["id"],"genesis-core","","Werkzeug: "+t["description"])
         self._save()
         return self.snapshot(agent)
 
@@ -119,6 +124,8 @@ class WorldModel:
                 "capabilities":sum(x.type=="capability" for x in self.entities),
                 "agents":sum(x.type=="agent" for x in self.entities),
                 "projects":sum(x.type=="project" for x in self.entities),
-                "tasks":sum(x.type=="task" for x in self.entities)
+                "tasks":sum(x.type=="task" for x in self.entities),
+                "skills":sum(x.type=="skill" for x in self.entities),
+                "tools":sum(x.type=="tool" for x in self.entities)
             }
         }
