@@ -30,6 +30,7 @@ class HeartbeatDaemon:
     def _run_item(self, item):
         if item.name == "world_cycle":
             self.agent.tick()
+            self.agent.runtime_db.event("world_cycle", {"agents": len(self.agent.agents.snapshot()), "tasks": len(self.agent.tasks.snapshot())}, actor="heartbeat")
         elif item.name == "maintenance":
             self.agent.memory.age()
             self.agent.world.sync(self.agent)
