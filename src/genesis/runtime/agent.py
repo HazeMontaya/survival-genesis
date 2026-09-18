@@ -60,7 +60,7 @@ class NeedEngine:
         return [
             {"capability": c, "title": t, "urgency": u, "prerequisites": p}
             for c, t, u, p in sorted(needs, key=lambda x: (-x[2], x[0]))
-            if all(active(p) for p in p)
+            if all(active(prereq) for prereq in p)
         ]
 
 class GenesisAgent:
