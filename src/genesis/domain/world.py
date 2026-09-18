@@ -208,7 +208,7 @@ class WorldModel:
             "entities": [asdict(e) for e in self.entities],
             "relations": [asdict(r) for r in self.relations],
             "events": self.events[-50:],
-            "counts": counts,
+            "counts": {**counts, "agents": counts.get("agent", 0)},
             "rooms": [{"id":k,"x":v[0],"y":v[1]} for k,v in self.ROOMS.items()],
             "layers": {"physical":True,"neural":True,"economic":True,"knowledge":True,"workflow":True},
             "gaps": self.gaps,
